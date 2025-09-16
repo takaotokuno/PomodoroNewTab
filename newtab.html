@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Pomodoro New Tab</title>
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Pomodoro Timer</h1>
+            </header>
+
+            <main>
+                <!-- Timer Setup Screen -->
+                <div id="setup-screen" class="screen active">
+                    <div class="timer-setup">
+                        <label for="timer-duration">Total (min)</label>
+                        <input type="number" id="timer-duration" value="60" min="15" max="300" placeholder="60" />
+                        <button id="start-button" class="primary-button">Start</button>
+                    </div>
+                </div>
+
+                <!-- Timer Running Screen -->
+                <div id="running-screen" class="screen">
+                    <div class="timer-display">
+                        <label id="time-total-label" for="time-total">Total Remaining Time</label>
+                        <div id="time-total" class="time-display">60:00</div>
+                        <label id="time-session-label" for="time-session">Working</label>
+                        <div id="time-session" class="time-display">25:00</div>
+                        <div class="timer-controls">
+                            <button id="pause-button" class="control-button">Pause</button>
+                            <button id="reset-button" class="control-button">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timer Completed Screen -->
+                <div id="completed-screen" class="screen">
+                    <div class="completion-message">
+                        <h2>Congratulations!</h2>
+                        <p>The Pomodoro session is complete.</p>
+                        <div class="completion-actions">
+                            <button id="new-session-button" class="primary-button">New Session</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            <footer class="controls-footer">
+                <div class="audio-control">
+                    <button id="audio-toggle" class="toggle-btn" data-enabled="false">
+                        <span class="icon" id="audio-icon">🔇</span>
+                        <span class="label">Audio Notifications</span>
+                    </button>
+                </div>
+            </footer>
+        </div>
+
+        <script src="newtab.js"></script>
+    </body>
+</html>
