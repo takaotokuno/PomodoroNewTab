@@ -12,5 +12,4 @@ package-lock.json
 .git/
 
 # eslint
-.eslintrc.json
 .eslintcache

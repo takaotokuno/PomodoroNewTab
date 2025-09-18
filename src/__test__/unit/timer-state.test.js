@@ -17,14 +17,14 @@ describe("TimerState", () => {
   const mockStartTime = 1609459200000; // Jan 1, 2021 00:00:00 GMT
 
   let timer;
-  let nowSpy;
 
   beforeAll(() => {
-    nowSpy = vi.spyOn(Date, "now").mockImplementation(() => mockStartTime);
+    vi.useFakeTimers();
+    vi.setSystemTime(mockStartTime);
   });
 
   afterAll(() => {
-    vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   beforeEach(() => {
