@@ -1,0 +1,44 @@
+{
+    "name": "Pomodoro New Tab",
+    "version": "1.0.0",
+    "description": "A simple Pomodoro timer for your new tab page.",
+    "manifest_version": 3,
+
+    # 新しいタブの上書き
+    "chrome_url_overrides": {
+        "newtab": "src/newtab.html"
+    },
+
+    # アドオンに与える権限
+    "permissions": [
+        "storage",
+        "tabs", # 全タブへのアクセス
+        "notifications", # システム通知（OSの通知領域に出る）を表示する
+        "alarms" # 拡張機能内において、イベントを発火する
+    ],
+
+    # バックグラウンドで常に動作するスクリプト
+    "background": {
+        "service_worker": "src/background.js"
+    },
+
+    # 特定のページに埋め込むスクリプト
+    "content_scripts": [
+        {
+            "matches" : [
+                "https://youtube.com/*",
+                "https://www.youtube.com/*",
+                "https://twitter.com/*",
+                "https://x.com/*",
+                "https://facebook.com/*",
+                "https://www.facebook.com/*",
+                "https://pixiv.net/*",
+                "https://www.pixiv.net/*",
+                "https://instagram.com/*",
+                "https://www.instagram.com/*"
+            ],
+            "js": ["src/content.js"],
+            "run_at": "document_start"
+        }
+    ]
+}

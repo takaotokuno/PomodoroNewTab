@@ -1,0 +1,3 @@
+class NewTabController {
+  constructor() {}
+}

@@ -1,18 +1,22 @@
 {
-    "name": "pomodoro-new-tab",
-    "version": "1.0.0",
-    "description": "A simple Pomodoro timer for your new tab page.",
-    "scripts": {
-        "test": "jest --config __test__/jest.config.js",
-        "test:watch": "jest --config __test__/jest.config.js --watch",
-        "lint": "eslint . --ext .js,.jsx",
-        "lint:fix": "eslint . --ext .js,.jsx --fix",
-        "format": "prettier --write \"**/*.{js,jsx,json,css,md}\""
-    },
-    "devDependencies": {
-        "eslint": "^8.36.0",
-        "eslint-config-prettier": "^8.8.0",
-        "jest": "^29.5.0",
-        "prettier": "^2.8.8"
-    }
+  "name": "pomodoro-new-tab",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A simple Pomodoro timer for your new tab page.",
+  "scripts": {
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint . --ext .js,.jsx",
+    "lint:fix": "eslint . --ext .js,.jsx --fix",
+    "format": "prettier --write \"**/*.{js,jsx,json,css,md}\"",
+    "convert:yaml": "npx js-yaml manifest.yml > manifest.json"
+  },
+  "devDependencies": {
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-import": "^2.27.5",
+    "prettier": "^2.8.8",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  }
 }

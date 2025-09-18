@@ -10,3 +10,7 @@ package-lock.json
 
 # Git files (for distribution)
 .git/
+
+# eslint
+.eslintrc.json
+.eslintcache
