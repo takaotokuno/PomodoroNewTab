@@ -10,8 +10,6 @@
     "sourceType": "module"
   },
   "rules": {
-    "import/no-unresolved": [
-      "error", { "ignore": ["^vitest/config$", "^@/"] }
-    ]
+    "import/no-unresolved": ["error", { "ignore": ["^vitest/config$", "^@/"] }]
   }
 }

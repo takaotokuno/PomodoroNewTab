@@ -14,8 +14,11 @@ export default class TimerState {
    * @param {number} totalDurationMinutes - Total duration in minutes (default 60).
    */
   start(totalDurationMinutes = Constants.DURATIONS.DEFAULT_TOTAL_MINUTES) {
+    this.reset();
+
     this.isActive = true;
     this.totalStartTime = Date.now();
+    this.currentSessionStartTime = Date.now();
     this.totalDuration = totalDurationMinutes * 60 * 1000; // convert minutes to ms
   }
 
@@ -25,10 +28,10 @@ export default class TimerState {
   pause() {
     if (!this.isActive || this.isPaused) return;
 
+    this._updateElapsed();
+
     this.isPaused = true;
     this.pausedAt = Date.now();
-
-    this._updateElapsed();
   }
 
   /**
@@ -88,11 +91,11 @@ export default class TimerState {
 
     const now = Date.now();
 
-    if (this.totalStartTime) {
+    if (this.totalStartTime != null) {
       this.totalElapsed = now - this.totalStartTime;
     }
 
-    if (this.currentSessionElapsed) {
+    if (this.currentSessionElapsed != null) {
       this.currentSessionElapsed = now - this.currentSessionStartTime;
     }
   }
