@@ -75,6 +75,7 @@ export default class TimerState {
 
     if (this._isTotalComplete()) {
       this.isActive = false;
+      return;
     }
 
     if (this._isSessionComplete()) {
@@ -87,7 +88,7 @@ export default class TimerState {
    * @private
    */
   _updateElapsed() {
-    if (!this.isActive && this.isPaused) return;
+    if (!this.isActive || this.isPaused) return;
 
     const now = Date.now();
 
