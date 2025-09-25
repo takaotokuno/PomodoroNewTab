@@ -11,5 +11,8 @@
   },
   "rules": {
     "import/no-unresolved": ["error", { "ignore": ["^vitest/config$", "^@/"] }]
+  },
+  "globals": {
+    "chrome": "readonly"
   }
 }

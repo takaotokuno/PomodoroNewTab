@@ -75,11 +75,12 @@ export default class TimerState {
 
     if (this._isTotalComplete()) {
       this.isActive = false;
-      return;
+      return { isTotalComplete: true };
     }
 
     if (this._isSessionComplete()) {
       this._switchSession();
+      return { isSessionComplete: true };
     }
   }
 
@@ -153,5 +154,48 @@ export default class TimerState {
       0,
       this.currentSessionDuration - this.currentSessionElapsed
     );
+  }
+
+  /**
+   * Create a serializable snapshot of the current timer state.
+   * Note: elapsed fields are intentionally omitted and will be recomputed.
+   * from wall-clock time on restore.
+   * @returns {object}
+   */
+  toSnapshot() {
+    return {
+      isActive: this.isActive,
+      isPaused: this.isPaused,
+      totalStartTime: this.totalStartTime,
+      totalDuration: this.totalDuration,
+      currentSessionType: this.currentSessionType,
+      currentSessionStartTime: this.currentSessionStartTime,
+      currentSessionDuration: this.currentSessionDuration,
+    };
+  }
+
+  /**
+   * Rebuild a TimerState instance from a previously saved snapshot.
+   * This method reconstructs timestamps and durations, then performs
+   * a single update to normalize derived fields (elapsed values).
+   * @param {object} snap - Snapshot previously created by toSnapshot().
+   * @returns {TimerState}
+   */
+  static fromSnapshot(snap) {
+    const t = new TimerState();
+    if (!snap || !snap.isActive) return t;
+
+    t.isActive = !!snap.isActive;
+    t.isPaused = !!snap.isPaused;
+    t.totalStartTime = snap.totalStartTime ?? null;
+    t.totalDuration = snap.totalDuration ?? null;
+    t.currentSessionType =
+      snap.currentSessionType ?? Constants.SESSION_TYPES.WORK;
+    t.currentSessionStartTime = snap.currentSessionStartTime ?? null;
+    t.currentSessionDuration =
+      snap.currentSessionDuration ?? Constants.DURATIONS.WORK_SESSION;
+
+    t.update();
+    return t;
   }
 }
