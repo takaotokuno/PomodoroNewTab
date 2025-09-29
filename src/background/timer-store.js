@@ -5,7 +5,7 @@ const timer = { instance: null };
 /**
  * chrome.storage only supports plain objects, so we store a snapshot here.
  */
-const SNAPSHOT_KEY = "pomorodoTimerSnapshot";
+const SNAPSHOT_KEY = "pomodoroTimerSnapshot";
 
 /**
  * Initialize the timer instance.
@@ -29,7 +29,7 @@ export function getTimer() {
  * Does nothing if the instance is missing or invalid.
  */
 export async function saveSnapshot() {
-  if (!timer.instance?.toSnapshot) return;
+  if (!timer.instance) return;
   await chrome.storage.local.set({
     [SNAPSHOT_KEY]: timer.instance.toSnapshot(),
   });
@@ -38,6 +38,7 @@ export async function saveSnapshot() {
 /**
  * Restore timer state from snapshot in chrome.storage.
  * If no snapshot is available, create a new TimerState.
+ * @private
  */
 async function _restoreSnapshot() {
   const { [SNAPSHOT_KEY]: snap } = await chrome.storage.local.get(SNAPSHOT_KEY);

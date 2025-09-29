@@ -9,5 +9,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    setupFiles: ["./src/__test__/setup.chrome.js"],
   },
 });
