@@ -89,8 +89,6 @@ export default class TimerState {
    * @private
    */
   _updateElapsed() {
-    if (!this.isActive || this.isPaused) return;
-
     const now = Date.now();
 
     if (this.totalStartTime != null) {
