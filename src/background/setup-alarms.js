@@ -2,8 +2,12 @@ import { initTimer, getTimer, saveSnapshot } from "./timer-store.js";
 import { handleUpdateResult } from "./events.js";
 
 const TICK = "POMODORO_TICK";
+let isInitialized = false;
 
 export function setupAlarms() {
+  if (isInitialized) return;
+  isInitialized = true;
+
   // Create a repeating alarm every 1 minute to keep Service Worker alive and update timer state
   chrome.alarms.create(TICK, { periodInMinutes: 1 });
 

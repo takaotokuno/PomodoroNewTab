@@ -7,7 +7,7 @@
  */
 
 import { initTimer, saveSnapshot } from "./timer-store.js";
-import { setupAlarms } from "./alarms.js";
+import { setupAlarms } from "./setup-alarms.js";
 import { routes } from "./events.js";
 
 // Ensure timer is restored on extension install and browser startup
