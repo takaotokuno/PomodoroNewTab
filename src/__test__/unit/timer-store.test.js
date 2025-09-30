@@ -1,7 +1,7 @@
 /**
  * Unit tests for timer-store.js
  */
-import { describe, test, expect, beforeEach, vi } from "vitest";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome";
 
 const SNAPSHOT_KEY = "pomodoroTimerSnapshot";
@@ -9,6 +9,10 @@ const SNAPSHOT_KEY = "pomodoroTimerSnapshot";
 beforeEach(() => {
   setupChromeMock();
   vi.resetModules();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 describe("initTimer", async () => {
