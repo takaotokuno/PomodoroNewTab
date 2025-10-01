@@ -5,11 +5,11 @@ import {
   describe,
   test,
   expect,
+  beforeEach,
+  afterEach,
   beforeAll,
   afterAll,
-  beforeEach,
   vi,
-  afterEach,
 } from "vitest";
 import TimerState from "@/timer-state.js";
 import Constants from "@/constants.js";

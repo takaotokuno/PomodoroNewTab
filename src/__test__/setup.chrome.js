@@ -10,6 +10,9 @@ export function setupChromeMock() {
 
   const runtime = {
     sendMessage: vi.fn(),
+    onInstalled: { addListener: vi.fn() },
+    onStartup: { addListener: vi.fn() },
+    onMessage: { addListener: vi.fn() },
   };
 
   const alarms = {
@@ -17,10 +20,15 @@ export function setupChromeMock() {
     onAlarm: { addListener: vi.fn() },
   };
 
+  const notifications = {
+    create: vi.fn((id, options, cb) => cb && cb()),
+  };
+
   const chromeMock = {
     storage: { local: storageLocal },
     runtime,
     alarms,
+    notifications,
   };
 
   vi.stubGlobal("chrome", chromeMock);

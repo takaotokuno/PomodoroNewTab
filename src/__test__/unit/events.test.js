@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import * as timerStore from "@/background/timer-store.js";
 import * as notification from "@/background/notification.js";
 import Constants from "@/constants.js";
@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("routes", () => {

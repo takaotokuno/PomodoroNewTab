@@ -34,7 +34,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("setupAlarms", () => {
@@ -89,7 +89,7 @@ describe("setupAlarms", () => {
     eventsMod.handleUpdateResult.mockRejectedValueOnce(new Error("boom"));
 
     setupAlarms();
-    
+
     await expect(listener({ name: TICK })).rejects.toThrow("boom");
     expect(saveSnapshot).not.toHaveBeenCalled();
   });
