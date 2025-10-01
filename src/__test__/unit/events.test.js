@@ -6,6 +6,7 @@ import { routes } from "@/background/events.js";
 
 const MOCK_TOTAL_REMAINING = 123;
 const MOCK_SESSION_REMAINING = 45;
+
 function initializeTimerStateMock() {
   return {
     start: vi.fn(),
@@ -21,19 +22,19 @@ function initializeTimerStateMock() {
   };
 }
 
+let mock;
+
+beforeEach(() => {
+  mock = initializeTimerStateMock();
+  vi.spyOn(timerStore, "getTimer").mockReturnValue({ instance: mock });
+  vi.spyOn(notification, "notify").mockResolvedValue();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("routes", () => {
-  let mock;
-
-  beforeEach(() => {
-    mock = initializeTimerStateMock();
-    vi.spyOn(timerStore, "getTimer").mockReturnValue({ instance: mock });
-    vi.spyOn(notification, "notify").mockResolvedValue();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   test('"timer/start" calls start wtesth minutes', () => {
     routes["timer/start"]({ minutes: 25 });
     expect(mock.start).toHaveBeenCalledWith(25);
