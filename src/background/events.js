@@ -1,5 +1,6 @@
 import { getTimer } from "./timer-store.js";
 import { notify } from "./notification.js";
+import { enableBlock, disableBlock } from "./sites-guard.js";
 import Constants from "../constants.js";
 
 /**
@@ -7,13 +8,19 @@ import Constants from "../constants.js";
  * Each key is a message type, mapped to a function that mutates or queries TimerState.
  */
 export const routes = {
-  "timer/start": ({ minutes }) => getTimer().instance.start(minutes),
+  "timer/start": async ({ minutes }) => {
+    getTimer().instance.start(minutes);
+    await enableBlock();
+  },
   "timer/pause": () => getTimer().instance.pause(),
   "timer/resume": () => getTimer().instance.resume(),
-  "timer/reset": () => getTimer().instance.reset(),
+  "timer/reset": async () => {
+    getTimer().instance.reset();
+    await disableBlock();
+  },
   "timer/update": async () => {
     const res = getTimer().instance.update();
-    await _handleEvents(res);
+    await handleEvents(res);
     return {
       isActive: getTimer().instance.isActive,
       isPaused: getTimer().instance.isPaused,
@@ -31,7 +38,7 @@ export const routes = {
  * - Show "switch" notification when a session ends,
  *   using currentSessionType after the switch.
  */
-async function _handleEvents(res) {
+export async function handleEvents(res) {
   if (!res || !getTimer().instance) return;
 
   if (res.isTotalComplete) {
@@ -40,6 +47,7 @@ async function _handleEvents(res) {
       title: "ポモドーロ完了",
       message: "お疲れ様！また頑張ろう",
     });
+    await disableBlock();
     return;
   }
   if (res.isSessionComplete) {
@@ -52,6 +60,13 @@ async function _handleEvents(res) {
         ? "SNSをブロックしたよ。作業に集中しよう"
         : "ブロックを解除したよ。肩の力を抜こう",
     });
+
+    if (isWork) {
+      await enableBlock();
+    } else {
+      await disableBlock();
+    }
+
     return;
   }
 }

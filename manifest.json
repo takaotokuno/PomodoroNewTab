@@ -4,9 +4,15 @@
   "description": "A simple Pomodoro timer for your new tab page.",
   "manifest_version": 3,
   "chrome_url_overrides": {
-    "newtab": "src/ui.html?mode=newtab"
+    "newtab": "src/ui/ui.html?mode=newtab"
   },
-  "permissions": ["storage", "tabs", "notifications", "alarms"],
+  "permissions": [
+    "storage",
+    "tabs",
+    "notifications",
+    "alarms",
+    "declarativeNetRequest"
+  ],
   "background": {
     "service_worker": "src/background/index.js",
     "type": "module"

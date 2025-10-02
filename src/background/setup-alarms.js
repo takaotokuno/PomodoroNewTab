@@ -1,5 +1,5 @@
 import { initTimer, getTimer, saveSnapshot } from "./timer-store.js";
-import { handleUpdateResult } from "./events.js";
+import { handleEvents } from "./events.js";
 
 const TICK = "POMODORO_TICK";
 let isInitialized = false;
@@ -20,7 +20,7 @@ export function setupAlarms() {
     await initTimer();
     const timer = getTimer();
     const res = timer.update();
-    await handleUpdateResult(timer, res);
+    await handleEvents(res);
     await saveSnapshot();
   });
 }

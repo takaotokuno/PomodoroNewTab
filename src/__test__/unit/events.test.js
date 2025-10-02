@@ -4,6 +4,13 @@ import * as notification from "@/background/notification.js";
 import Constants from "@/constants.js";
 import { routes } from "@/background/events.js";
 
+vi.mock("@/background/sites-guard.js", () => {
+  return {
+    enableBlock: vi.fn(),
+    disableBlock: vi.fn(),
+  };
+});
+
 const MOCK_TOTAL_REMAINING = 123;
 const MOCK_SESSION_REMAINING = 45;
 
@@ -22,11 +29,11 @@ function initializeTimerStateMock() {
   };
 }
 
-let mock;
+let fakeTimer;
 
 beforeEach(() => {
-  mock = initializeTimerStateMock();
-  vi.spyOn(timerStore, "getTimer").mockReturnValue({ instance: mock });
+  fakeTimer = initializeTimerStateMock();
+  vi.spyOn(timerStore, "getTimer").mockReturnValue({ instance: fakeTimer });
   vi.spyOn(notification, "notify").mockResolvedValue();
 });
 
@@ -37,31 +44,31 @@ afterEach(() => {
 describe("routes", () => {
   test('"timer/start" calls start wtesth minutes', () => {
     routes["timer/start"]({ minutes: 25 });
-    expect(mock.start).toHaveBeenCalledWith(25);
+    expect(fakeTimer.start).toHaveBeenCalledWith(25);
   });
 
   test('"timer/pause" calls pause', () => {
     routes["timer/pause"]();
-    expect(mock.pause).toHaveBeenCalled();
+    expect(fakeTimer.pause).toHaveBeenCalled();
   });
 
   test('"timer/resume" calls resume', () => {
     routes["timer/resume"]();
-    expect(mock.resume).toHaveBeenCalled();
+    expect(fakeTimer.resume).toHaveBeenCalled();
   });
 
   test('"timer/reset" calls reset', () => {
     routes["timer/reset"]();
-    expect(mock.reset).toHaveBeenCalled();
+    expect(fakeTimer.reset).toHaveBeenCalled();
   });
 
   test('"timer/update" calls update and returns timer state', async () => {
-    mock.update.mockReturnValue({});
+    fakeTimer.update.mockReturnValue({});
     const result = await routes["timer/update"]();
-    expect(mock.update).toHaveBeenCalled();
+    expect(fakeTimer.update).toHaveBeenCalled();
     expect(result).toEqual({
-      isActive: mock.isActive,
-      isPaused: mock.isPaused,
+      isActive: fakeTimer.isActive,
+      isPaused: fakeTimer.isPaused,
       totalRemaining: MOCK_TOTAL_REMAINING,
       currentSessionType: "WORK",
       currentSessionRemaining: MOCK_SESSION_REMAINING,
@@ -69,7 +76,7 @@ describe("routes", () => {
   });
 
   test('"timer/update" notifies "complete" if isTotalComplete', async () => {
-    mock.update.mockReturnValue({ isTotalComplete: true });
+    fakeTimer.update.mockReturnValue({ isTotalComplete: true });
     await routes["timer/update"]();
     expect(notification.notify).toHaveBeenCalledWith(
       expect.objectContaining({ id: "complete" })
@@ -77,8 +84,8 @@ describe("routes", () => {
   });
 
   test('"timer/update" notifies "switch" if isSessionComplete (WORK)', async () => {
-    mock.update.mockReturnValue({ isSessionComplete: true });
-    mock.currentSessionType = Constants.SESSION_TYPES.WORK;
+    fakeTimer.update.mockReturnValue({ isSessionComplete: true });
+    fakeTimer.currentSessionType = Constants.SESSION_TYPES.WORK;
     await routes["timer/update"]();
     expect(notification.notify).toHaveBeenCalledWith(
       expect.objectContaining({ id: "switch", title: "作業開始！" })
@@ -86,8 +93,8 @@ describe("routes", () => {
   });
 
   test('"timer/update" notifies "switch" if isSessionComplete (BREAK)', async () => {
-    mock.update.mockReturnValue({ isSessionComplete: true });
-    mock.currentSessionType = Constants.SESSION_TYPES.BREAK;
+    fakeTimer.update.mockReturnValue({ isSessionComplete: true });
+    fakeTimer.currentSessionType = Constants.SESSION_TYPES.BREAK;
     await routes["timer/update"]();
     expect(notification.notify).toHaveBeenCalledWith(
       expect.objectContaining({ id: "switch", title: "休憩開始" })

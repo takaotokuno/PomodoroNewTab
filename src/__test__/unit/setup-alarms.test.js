@@ -16,7 +16,7 @@ vi.mock("@/background/timer-store.js", () => {
 });
 vi.mock("@/background/events.js", () => {
   return {
-    handleUpdateResult: vi.fn().mockResolvedValue(undefined),
+    handleEvents: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -52,13 +52,13 @@ describe("setupAlarms", () => {
 
   test("ignores alarms with a different name", async () => {
     const { setupAlarms } = await import("@/background/setup-alarms.js");
-    const { handleUpdateResult } = await import("@/background/events.js");
+    const { handleEvents } = await import("@/background/events.js");
 
     setupAlarms();
 
     await listener({ name: "OTHER_TICK" });
 
-    expect(handleUpdateResult).not.toHaveBeenCalled();
+    expect(handleEvents).not.toHaveBeenCalled();
   });
 
   test("handles the POMODORO_TICK flow in order", async () => {
@@ -66,7 +66,7 @@ describe("setupAlarms", () => {
     const { initTimer, getTimer, saveSnapshot, __fakeTimer } = await import(
       "@/background/timer-store.js"
     );
-    const { handleUpdateResult } = await import("@/background/events.js");
+    const { handleEvents } = await import("@/background/events.js");
 
     setupAlarms();
 
@@ -77,16 +77,16 @@ describe("setupAlarms", () => {
     expect(__fakeTimer.update).toHaveBeenCalled();
 
     const res = __fakeTimer.update.mock.results[0].value;
-    expect(handleUpdateResult).toHaveBeenCalledWith(__fakeTimer, res);
+    expect(handleEvents).toHaveBeenCalledWith(res);
 
     expect(saveSnapshot).toHaveBeenCalled();
   });
 
-  test("propagetes errors from handleUpdateResult and does not save snapshot afterwards", async () => {
+  test("propagetes errors from handleEvents and does not save snapshot afterwards", async () => {
     const { setupAlarms } = await import("@/background/setup-alarms.js");
     const { saveSnapshot } = await import("@/background/timer-store.js");
     const eventsMod = await import("@/background/events.js");
-    eventsMod.handleUpdateResult.mockRejectedValueOnce(new Error("boom"));
+    eventsMod.handleEvents.mockRejectedValueOnce(new Error("boom"));
 
     setupAlarms();
 

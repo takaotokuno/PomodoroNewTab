@@ -24,11 +24,16 @@ export function setupChromeMock() {
     create: vi.fn((id, options, cb) => cb && cb()),
   };
 
+  const declarativeNetRequest = {
+    updateDynamicRules: { updateDynamicRules: vi.fn() },
+  };
+
   const chromeMock = {
     storage: { local: storageLocal },
     runtime,
     alarms,
     notifications,
+    declarativeNetRequest,
   };
 
   vi.stubGlobal("chrome", chromeMock);
