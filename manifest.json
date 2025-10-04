@@ -13,8 +13,15 @@
     "alarms",
     "declarativeNetRequest"
   ],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background/index.js",
     "type": "module"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/ui/ui.html", "src/ui/ui.js", "src/ui/ui.css"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
