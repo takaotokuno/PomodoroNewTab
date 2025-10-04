@@ -11,6 +11,13 @@ export default class Constants {
     MAX_TOTAL_MINUTES: 300,
   };
 
+  static TIMER_MODES = {
+    SETUP: "setup",
+    RUNNING: "running",
+    PAUSED: "paused",
+    COMPLETED: "completed",
+  };
+
   static SESSION_TYPES = {
     WORK: "work",
     BREAK: "break",
