@@ -3,6 +3,8 @@
  */
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome";
+import Constants from "@/constants";
+const { TIMER_MODES } = Constants;
 
 const SNAPSHOT_KEY = "pomodoroTimerSnapshot";
 
@@ -28,8 +30,8 @@ describe("initTimer", async () => {
     // initTImer should return a TimerState instance
     expect(timer).toBeTruthy();
 
-    // default state should be inactive
-    expect(timer.isActive).toBe(false);
+    // default mode should be "setup"
+    expect(timer.mode).toBe(TIMER_MODES.SETUP);
   });
 
   test("reuses the same instance when called multiple times", async () => {
@@ -39,17 +41,17 @@ describe("initTimer", async () => {
     timer = await initTimer();
 
     // instance should persist its state
-    expect(timer.isActive).toBe(true);
+    expect(timer.mode).toBe(TIMER_MODES.RUNNING);
   });
 
   test("restores timer state from an existing snapshot", async () => {
     chrome.storage.local.get.mockResolvedValue({
-      [SNAPSHOT_KEY]: { isActive: true },
+      [SNAPSHOT_KEY]: { mode: TIMER_MODES.RUNNING },
     });
 
     let timer = await initTimer();
 
-    expect(timer.isActive).toBe(true);
+    expect(timer.mode).toBe(TIMER_MODES.RUNNING);
   });
 });
 
