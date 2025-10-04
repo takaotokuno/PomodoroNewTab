@@ -9,6 +9,8 @@ const TARGETS = [
   "tiktok.com",
   "youtube.com",
   "reddit.com",
+  "pixiv.net",
+  "nicovideo.jp",
 ];
 
 function _buildRules() {
