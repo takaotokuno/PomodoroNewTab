@@ -53,7 +53,7 @@ export async function handleEvents(res) {
 
   if (res.mode === Constants.TIMER_MODES.COMPLETED) {
     await notify({
-      id: "complete",
+      id: "complete" + Date.now(),
       title: "ポモドーロ完了",
       message: "お疲れ様！また頑張ろう",
     });
