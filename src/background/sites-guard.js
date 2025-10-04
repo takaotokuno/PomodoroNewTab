@@ -1,5 +1,5 @@
 const RULE_ID_BASE = 10_100;
-const REDIRECT_PATH = "../ui/ui.html";
+const REDIRECT_PATH = "/src/ui/ui.html";
 
 const TARGETS = [
   "x.com",
