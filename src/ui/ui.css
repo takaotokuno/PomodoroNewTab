@@ -1,0 +1,168 @@
+/* 基本リセット */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 全体レイアウト */
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #6366f1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+}
+
+.container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+}
+
+/* 見出し */
+header h1 {
+  color: #374151;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+}
+
+/* 画面切り替え */
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+}
+
+/* 入力フィールド */
+input {
+  width: 80px;
+  padding: 0.5rem;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+input:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+input.invalid {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* エラーメッセージ */
+.input-error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: none;
+}
+
+/* ボタン共通 */
+button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin: 0.25rem;
+}
+
+/* メインボタン */
+.primary-button {
+  background: #6366f1;
+  color: white;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.primary-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* サブボタン */
+.secondary-button {
+  background: white;
+  color: #6366f1;
+  border: 2px solid #6366f1;
+}
+
+.secondary-button:hover {
+  background: #6366f1;
+  color: white;
+}
+
+/* タイマー表示 */
+.time-display {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 1rem 0;
+  font-family: monospace;
+  transition: color 0.3s ease;
+}
+
+/* タイマー実行中の表示 */
+.timer-display {
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+/* タイマーコントロール */
+.timer-controls {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* タイマーラベル */
+label {
+  display: block;
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+/* 完了画面 */
+.completion-message h2 {
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.completion-message p {
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.completion-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.completion-actions button {
+  width: 100%;
+  max-width: 280px;
+}
