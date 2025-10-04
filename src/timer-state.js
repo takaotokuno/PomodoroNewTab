@@ -3,6 +3,7 @@
  * Handles starting, pausing, resuming, resetting, and updating the timer.
  */
 import Constants from "./constants.js";
+const { TIMER_MODES, SESSION_TYPES, DURATIONS } = Constants;
 
 export default class TimerState {
   constructor() {
@@ -13,24 +14,27 @@ export default class TimerState {
    * Starts the timer with a total duration in minutes.
    * @param {number} totalDurationMinutes - Total duration in minutes (default 60).
    */
-  start(totalDurationMinutes = Constants.DURATIONS.DEFAULT_TOTAL_MINUTES) {
+  start(totalDurationMinutes = DURATIONS.DEFAULT_TOTAL_MINUTES) {
     this.reset();
 
-    this.isActive = true;
+    this.mode = TIMER_MODES.RUNNING;
+
     this.totalStartTime = Date.now();
-    this.currentSessionStartTime = Date.now();
     this.totalDuration = totalDurationMinutes * 60 * 1000; // convert minutes to ms
+
+    this.sessionStartTime = Date.now();
+    this.sessionDuration = Math.min(DURATIONS.WORK_SESSION, this.totalDuration);
   }
 
   /**
    * Pauses the timer.
    */
   pause() {
-    if (!this.isActive || this.isPaused) return;
+    if (this.mode !== TIMER_MODES.RUNNING) return;
 
     this._updateElapsed();
 
-    this.isPaused = true;
+    this.mode = TIMER_MODES.PAUSED;
     this.pausedAt = Date.now();
   }
 
@@ -38,14 +42,14 @@ export default class TimerState {
    * Resumes the timer.
    */
   resume() {
-    if (!this.isActive || !this.isPaused) return;
+    if (this.mode !== TIMER_MODES.PAUSED) return;
 
     const pauseDuration = Date.now() - this.pausedAt;
 
     this.totalStartTime += pauseDuration;
-    this.currentSessionStartTime += pauseDuration;
+    this.sessionStartTime += pauseDuration;
 
-    this.isPaused = false;
+    this.mode = TIMER_MODES.RUNNING;
     this.pausedAt = null;
   }
 
@@ -53,15 +57,14 @@ export default class TimerState {
    * Resets the timer to its initial state.
    */
   reset() {
-    this.isActive = false;
-    this.isPaused = false;
+    this.mode = TIMER_MODES.SETUP;
     this.totalStartTime = null;
     this.totalDuration = null;
     this.totalElapsed = 0;
-    this.currentSessionType = Constants.SESSION_TYPES.WORK;
-    this.currentSessionStartTime = null;
-    this.currentSessionDuration = Constants.DURATIONS.WORK_SESSION;
-    this.currentSessionElapsed = 0;
+    this.sessionType = SESSION_TYPES.WORK;
+    this.sessionStartTime = null;
+    this.sessionDuration = DURATIONS.WORK_SESSION;
+    this.sessionElapsed = 0;
     this.pausedAt = null;
   }
 
@@ -69,18 +72,18 @@ export default class TimerState {
    * Updates the timer state, should be called periodically (e.g., every second).
    */
   update() {
-    if (!this.isActive || this.isPaused) return;
+    if (this.mode !== TIMER_MODES.RUNNING) return;
 
     this._updateElapsed();
 
     if (this._isTotalComplete()) {
-      this.isActive = false;
-      return { isTotalComplete: true };
+      this.mode = TIMER_MODES.COMPLETED;
+      return this;
     }
 
     if (this._isSessionComplete()) {
       this._switchSession();
-      return { isSessionComplete: true };
+      return { ...this, isSessionComplete: true };
     }
   }
 
@@ -95,8 +98,8 @@ export default class TimerState {
       this.totalElapsed = now - this.totalStartTime;
     }
 
-    if (this.currentSessionElapsed != null) {
-      this.currentSessionElapsed = now - this.currentSessionStartTime;
+    if (this.sessionElapsed != null) {
+      this.sessionElapsed = now - this.sessionStartTime;
     }
   }
 
@@ -115,7 +118,7 @@ export default class TimerState {
    * @returns {boolean} - True if current session is complete.
    */
   _isSessionComplete() {
-    return this.currentSessionElapsed >= this.currentSessionDuration;
+    return this.sessionElapsed >= this.sessionDuration;
   }
 
   /**
@@ -123,16 +126,18 @@ export default class TimerState {
    * @private
    */
   _switchSession() {
-    const isWorking = this.currentSessionType === Constants.SESSION_TYPES.WORK;
+    const isWorking = this.sessionType === SESSION_TYPES.WORK;
 
-    this.currentSessionType = isWorking
-      ? Constants.SESSION_TYPES.BREAK
-      : Constants.SESSION_TYPES.WORK;
-    this.currentSessionDuration = isWorking
-      ? Constants.DURATIONS.BREAK_SESSION
-      : Constants.DURATIONS.WORK_SESSION;
-    this.currentSessionStartTime = Date.now();
-    this.currentSessionElapsed = 0;
+    this.sessionType = isWorking ? SESSION_TYPES.BREAK : SESSION_TYPES.WORK;
+    this.sessionDuration = isWorking
+      ? DURATIONS.BREAK_SESSION
+      : DURATIONS.WORK_SESSION;
+    this.sessionDuration = Math.min(
+      this.sessionDuration,
+      this.getTotalRemaining()
+    );
+    this.sessionStartTime = Date.now();
+    this.sessionElapsed = 0;
   }
 
   /**
@@ -147,11 +152,8 @@ export default class TimerState {
    * Returns the current session remaining time in milliseconds.
    * @returns {number} - Current session remaining time in ms.
    */
-  getCurrentSessionRemaining() {
-    return Math.max(
-      0,
-      this.currentSessionDuration - this.currentSessionElapsed
-    );
+  getSessionRemaining() {
+    return Math.max(0, this.sessionDuration - this.sessionElapsed);
   }
 
   /**
@@ -162,13 +164,13 @@ export default class TimerState {
    */
   toSnapshot() {
     return {
-      isActive: this.isActive,
-      isPaused: this.isPaused,
+      mode: this.mode,
       totalStartTime: this.totalStartTime,
       totalDuration: this.totalDuration,
-      currentSessionType: this.currentSessionType,
-      currentSessionStartTime: this.currentSessionStartTime,
-      currentSessionDuration: this.currentSessionDuration,
+      sessionType: this.sessionType,
+      sessionStartTime: this.sessionStartTime,
+      sessionDuration: this.sessionDuration,
+      pausedAt: this.pausedAt,
     };
   }
 
@@ -181,17 +183,20 @@ export default class TimerState {
    */
   static fromSnapshot(snap) {
     const t = new TimerState();
-    if (!snap || !snap.isActive) return t;
+    if (!snap) return t;
 
-    t.isActive = !!snap.isActive;
-    t.isPaused = !!snap.isPaused;
+    t.mode = snap.mode || TIMER_MODES.SETUP;
     t.totalStartTime = snap.totalStartTime ?? null;
-    t.totalDuration = snap.totalDuration ?? null;
-    t.currentSessionType =
-      snap.currentSessionType ?? Constants.SESSION_TYPES.WORK;
-    t.currentSessionStartTime = snap.currentSessionStartTime ?? null;
-    t.currentSessionDuration =
-      snap.currentSessionDuration ?? Constants.DURATIONS.WORK_SESSION;
+    t.totalDuration =
+      snap.totalDuration ?? DURATIONS.DEFAULT_TOTAL_MINUTES * 60 * 1000;
+    t.sessionType = snap.sessionType ?? SESSION_TYPES.WORK;
+    t.sessionStartTime = snap.sessionStartTime ?? null;
+    t.sessionDuration = snap.sessionDuration ?? DURATIONS.WORK_SESSION;
+    t.pausedAt = snap.pausedAt ?? null;
+
+    // Recompute elapsed fields based on wall-clock time
+    t.totalElapsed = Date.now() - t.totalStartTime;
+    t.sessionElapsed = Date.now() - t.sessionStartTime;
 
     t.update();
     return t;
