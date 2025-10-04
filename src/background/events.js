@@ -1,4 +1,5 @@
 import { getTimer } from "./timer-store.js";
+import { startTick, stopTick } from "./setup-alarms.js";
 import { notify } from "./notification.js";
 import { enableBlock, disableBlock } from "./sites-guard.js";
 import Constants from "../constants.js";
@@ -9,24 +10,33 @@ import Constants from "../constants.js";
  */
 export const routes = {
   "timer/start": async ({ minutes }) => {
-    getTimer().instance.start(minutes);
+    if (!minutes || minutes < 0) throw new Error("Invalid minutes");
+
+    getTimer().start(minutes);
     await enableBlock();
+    await startTick();
   },
-  "timer/pause": () => getTimer().instance.pause(),
-  "timer/resume": () => getTimer().instance.resume(),
+  "timer/pause": async () => {
+    getTimer().pause();
+    await stopTick();
+  },
+  "timer/resume": async () => {
+    getTimer().resume();
+    await startTick();
+  },
   "timer/reset": async () => {
-    getTimer().instance.reset();
+    getTimer().reset();
     await disableBlock();
+    await stopTick();
   },
   "timer/update": async () => {
-    const res = getTimer().instance.update();
+    const res = getTimer().update();
     await handleEvents(res);
     return {
-      isActive: getTimer().instance.isActive,
-      isPaused: getTimer().instance.isPaused,
-      totalRemaining: getTimer().instance.getTotalRemaining(),
-      currentSessionType: getTimer().instance.currentSessionType,
-      currentSessionRemaining: getTimer().instance.getCurrentSessionRemaining(),
+      mode: getTimer().mode,
+      totalRemaining: getTimer().getTotalRemaining(),
+      sessionType: getTimer().sessionType,
+      sessionRemaining: getTimer().getSessionRemaining(),
     };
   },
 };
@@ -39,22 +49,21 @@ export const routes = {
  *   using currentSessionType after the switch.
  */
 export async function handleEvents(res) {
-  if (!res || !getTimer().instance) return;
+  if (!res) return;
 
-  if (res.isTotalComplete) {
+  if (res.mode === Constants.TIMER_MODES.COMPLETED) {
     await notify({
       id: "complete",
       title: "ポモドーロ完了",
       message: "お疲れ様！また頑張ろう",
     });
+
     await disableBlock();
-    return;
-  }
-  if (res.isSessionComplete) {
-    const isWork =
-      getTimer().instance.currentSessionType === Constants.SESSION_TYPES.WORK;
+    await stopTick();
+  } else if (res.isSessionComplete) {
+    const isWork = res.sessionType === Constants.SESSION_TYPES.WORK;
     await notify({
-      id: "switch",
+      id: "switch" + Date.now(),
       title: isWork ? "作業開始！" : "休憩開始",
       message: isWork
         ? "SNSをブロックしたよ。作業に集中しよう"
@@ -66,7 +75,5 @@ export async function handleEvents(res) {
     } else {
       await disableBlock();
     }
-
-    return;
   }
 }
