@@ -13,6 +13,7 @@ export function setupChromeMock() {
     onInstalled: { addListener: vi.fn() },
     onStartup: { addListener: vi.fn() },
     onMessage: { addListener: vi.fn() },
+    getURL: vi.fn((path) => path),
   };
 
   const alarms = {
