@@ -8,7 +8,6 @@ import { setupChromeMock } from "../setup.chrome";
 vi.mock("@/background/timer-store.js", () => {
   const fakeTimer = { update: vi.fn().mockReturnValue({ any: "sentinel" }) };
   return {
-    initTimer: vi.fn().mockResolvedValue(undefined),
     getTimer: vi.fn(() => fakeTimer),
     saveSnapshot: vi.fn().mockResolvedValue(undefined),
     __fakeTimer: fakeTimer,
@@ -43,9 +42,6 @@ describe("setupAlarms", () => {
 
     setupAlarms();
 
-    expect(alarms.create).toHaveBeenCalledWith(TICK, {
-      periodInMinutes: 1,
-    });
     expect(alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
     expect(typeof listener).toBe("function");
   });
@@ -63,7 +59,7 @@ describe("setupAlarms", () => {
 
   test("handles the POMODORO_TICK flow in order", async () => {
     const { setupAlarms } = await import("@/background/setup-alarms.js");
-    const { initTimer, getTimer, saveSnapshot, __fakeTimer } = await import(
+    const { getTimer, saveSnapshot, __fakeTimer } = await import(
       "@/background/timer-store.js"
     );
     const { handleEvents } = await import("@/background/events.js");
@@ -72,7 +68,6 @@ describe("setupAlarms", () => {
 
     await listener({ name: "POMODORO_TICK" });
 
-    expect(initTimer).toHaveBeenCalled();
     expect(getTimer).toHaveBeenCalled();
     expect(__fakeTimer.update).toHaveBeenCalled();
 
@@ -101,5 +96,23 @@ describe("setupAlarms", () => {
     setupAlarms();
 
     expect(alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
+  });
+
+  test("startTick creates the repeating alarm", async () => {
+    const { startTick } = await import("@/background/setup-alarms.js");
+
+    await startTick();
+
+    expect(alarms.create).toHaveBeenCalledWith(TICK, {
+      periodInMinutes: 1,
+    });
+  });
+
+  test("stopTick clears the repeating alarm", async () => {
+    const { stopTick } = await import("@/background/setup-alarms.js");
+
+    await stopTick();
+
+    expect(alarms.clear).toHaveBeenCalledWith(TICK);
   });
 });
