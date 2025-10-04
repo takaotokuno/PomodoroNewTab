@@ -17,6 +17,7 @@ export function setupChromeMock() {
 
   const alarms = {
     create: vi.fn(),
+    clear: vi.fn(),
     onAlarm: { addListener: vi.fn() },
   };
 
