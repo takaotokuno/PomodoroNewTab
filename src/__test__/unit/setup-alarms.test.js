@@ -1,118 +1,119 @@
 /**
- * Unit tests for alarms.js
+ * Unit tests for setup-alarms.js
  */
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { setupChromeMock } from "../setup.chrome";
+import { setupChromeMock } from "../setup.chrome.js";
 
-//
-vi.mock("@/background/timer-store.js", () => {
-  const fakeTimer = { update: vi.fn().mockReturnValue({ any: "sentinel" }) };
-  return {
-    getTimer: vi.fn(() => fakeTimer),
-    saveSnapshot: vi.fn().mockResolvedValue(undefined),
-    __fakeTimer: fakeTimer,
-  };
-});
-vi.mock("@/background/events.js", () => {
-  return {
-    handleEvents: vi.fn().mockResolvedValue(undefined),
-  };
-});
+// Mock timer-store
+const mockTimer = {
+  update: vi.fn().mockReturnValue({ any: "sentinel" }),
+};
 
-let alarms;
-let listener;
-const TICK = "POMODORO_TICK";
+vi.mock("@/background/timer-store.js", () => ({
+  getTimer: vi.fn(() => mockTimer),
+  saveSnapshot: vi.fn().mockResolvedValue(undefined),
+  __mockTimer: mockTimer,
+}));
 
-beforeEach(async () => {
-  vi.resetModules();
-  ({ alarms } = setupChromeMock());
+// Mock events
+vi.mock("@/background/events.js", () => ({
+  handleEvents: vi.fn().mockResolvedValue(undefined),
+}));
 
-  alarms.onAlarm.addListener.mockImplementation((fn) => {
-    listener = fn;
-  });
-});
+describe("SetupAlarms", () => {
+  const TICK = "POMODORO_TICK";
 
-afterEach(() => {
-  vi.clearAllMocks();
-});
+  let chromeMock = setupChromeMock();
+  let listener;
+  let setupAlarms, startTick, stopTick;
 
-describe("setupAlarms", () => {
-  test("registers a repeating alarm with the correct name and period", async () => {
-    const { setupAlarms } = await import("@/background/setup-alarms.js");
+  beforeEach(async () => {
+    vi.resetModules();
 
-    setupAlarms();
+    chromeMock.alarms.onAlarm.addListener.mockImplementation((fn) => {
+      listener = fn;
+    });
 
-    expect(alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
-    expect(typeof listener).toBe("function");
+    // Import fresh modules after reset
+    const setupAlarmsModule = await import("@/background/setup-alarms.js");
+    setupAlarms = setupAlarmsModule.setupAlarms;
+    startTick = setupAlarmsModule.startTick;
+    stopTick = setupAlarmsModule.stopTick;
   });
 
-  test("ignores alarms with a different name", async () => {
-    const { setupAlarms } = await import("@/background/setup-alarms.js");
-    const { handleEvents } = await import("@/background/events.js");
-
-    setupAlarms();
-
-    await listener({ name: "OTHER_TICK" });
-
-    expect(handleEvents).not.toHaveBeenCalled();
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
-  test("handles the POMODORO_TICK flow in order", async () => {
-    const { setupAlarms } = await import("@/background/setup-alarms.js");
-    const { getTimer, saveSnapshot, __fakeTimer } = await import(
-      "@/background/timer-store.js"
-    );
-    const { handleEvents } = await import("@/background/events.js");
+  describe("setupAlarms()", () => {
+    test("should register alarm listener", () => {
+      setupAlarms();
 
-    setupAlarms();
+      expect(chromeMock.alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
+      expect(typeof listener).toBe("function");
+    });
 
-    await listener({ name: "POMODORO_TICK" });
+    test("should ignore alarms with different name", async () => {
+      const { handleEvents } = await import("@/background/events.js");
 
-    expect(getTimer).toHaveBeenCalled();
-    expect(__fakeTimer.update).toHaveBeenCalled();
+      setupAlarms();
+      await listener({ name: "OTHER_TICK" });
 
-    const res = __fakeTimer.update.mock.results[0].value;
-    expect(handleEvents).toHaveBeenCalledWith(res);
+      expect(handleEvents).not.toHaveBeenCalled();
+    });
 
-    expect(saveSnapshot).toHaveBeenCalled();
-  });
+    test("should handle POMODORO_TICK flow in correct order", async () => {
+      const { getTimer, saveSnapshot, __mockTimer } = await import(
+        "@/background/timer-store.js"
+      );
+      const { handleEvents } = await import("@/background/events.js");
 
-  test("propagetes errors from handleEvents and does not save snapshot afterwards", async () => {
-    const { setupAlarms } = await import("@/background/setup-alarms.js");
-    const { saveSnapshot } = await import("@/background/timer-store.js");
-    const eventsMod = await import("@/background/events.js");
-    eventsMod.handleEvents.mockRejectedValueOnce(new Error("boom"));
+      setupAlarms();
+      await listener({ name: TICK });
 
-    setupAlarms();
+      expect(getTimer).toHaveBeenCalled();
+      expect(__mockTimer.update).toHaveBeenCalled();
 
-    await expect(listener({ name: TICK })).rejects.toThrow("boom");
-    expect(saveSnapshot).not.toHaveBeenCalled();
-  });
+      const updateResult = __mockTimer.update.mock.results[0].value;
+      expect(handleEvents).toHaveBeenCalledWith(updateResult);
+      expect(saveSnapshot).toHaveBeenCalled();
+    });
 
-  test("calling setupAlarms multiple times", async () => {
-    const { setupAlarms } = await import("@/background/setup-alarms.js");
+    test("should propagate errors from handleEvents and not save snapshot", async () => {
+      const { saveSnapshot } = await import("@/background/timer-store.js");
+      const { handleEvents } = await import("@/background/events.js");
 
-    setupAlarms();
-    setupAlarms();
+      handleEvents.mockRejectedValueOnce(new Error("boom"));
 
-    expect(alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
-  });
+      setupAlarms();
 
-  test("startTick creates the repeating alarm", async () => {
-    const { startTick } = await import("@/background/setup-alarms.js");
+      await expect(listener({ name: TICK })).rejects.toThrow("boom");
+      expect(saveSnapshot).not.toHaveBeenCalled();
+    });
 
-    await startTick();
+    test("should only register listener once when called multiple times", () => {
+      setupAlarms();
+      setupAlarms();
 
-    expect(alarms.create).toHaveBeenCalledWith(TICK, {
-      periodInMinutes: 1,
+      expect(chromeMock.alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
     });
   });
 
-  test("stopTick clears the repeating alarm", async () => {
-    const { stopTick } = await import("@/background/setup-alarms.js");
+  describe("startTick()", () => {
+    test("should create repeating alarm with correct parameters", async () => {
+      await startTick();
 
-    await stopTick();
+      expect(chromeMock.alarms.create).toHaveBeenCalledWith(TICK, {
+        periodInMinutes: 1,
+      });
+    });
+  });
 
-    expect(alarms.clear).toHaveBeenCalledWith(TICK);
+  describe("stopTick()", () => {
+    test("should clear the repeating alarm", async () => {
+      await stopTick();
+
+      expect(chromeMock.alarms.clear).toHaveBeenCalledWith(TICK);
+    });
   });
 });
