@@ -13,6 +13,7 @@ const TARGETS = [
   "nicovideo.jp",
   "syosetu.com",
   "yomou.syosetu.com",
+  "read.amazon.co.jp/manga"
 ];
 
 function _buildRules() {
