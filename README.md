@@ -16,14 +16,14 @@
 
 ### 技術仕様
 
-- **対応ブラウザ**: Chrome（Manifest V3対応）
+- **対応ブラウザ**: Chrome（Manifest V3 対応）
 - **必要な権限**: storage, tabs, notifications, alarms, declarativeNetRequest
 - **フレームワーク**: Vanilla JavaScript（ES6 Modules）
 
 ## 使用方法
 
 1. 新しいタブを開くとポモドーロタイマーが表示されます
-2. タイマーの時間を設定（5分〜300分）
+2. タイマーの時間を設定（5 分〜300 分）
 3. 「開始」ボタンでタイマーを開始
 4. 作業中は指定されたサイトが自動的にブロックされます
 5. タイマー終了時に通知が表示されます
@@ -42,23 +42,26 @@
 
 ### 前提条件
 
-- Node.js (v16以上推奨)
+- Node.js (v16 以上推奨)
 - npm
 
 ### セットアップ手順
 
 1. リポジトリをクローン
+
 ```bash
 git clone <repository-url>
 cd pomodoro-new-tab
 ```
 
 2. 依存関係をインストール
+
 ```bash
 npm install
 ```
 
 3. 開発用スクリプト
+
 ```bash
 # テスト実行
 npm test
@@ -118,8 +121,12 @@ pomodoro-new-tab/
 
 ## ライセンス
 
-このプロジェクトはMITライセンスの下で公開されています。詳細は[LICENSE](LICENSE)ファイルを参照してください。
+このプロジェクトは MIT ライセンスの下で公開されています。詳細は[LICENSE](LICENSE)ファイルを参照してください。
+
+## 謝辞
+
+このプロジェクトの開発には AI 支援ツールを部分的に使用しています。
 
 ## バグ報告・機能要望
 
-問題を発見した場合や新機能の要望がある場合は、GitHubのIssuesページで報告してください。
+問題を発見した場合や新機能の要望がある場合は、GitHub の Issues ページで報告してください。
