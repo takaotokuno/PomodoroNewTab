@@ -53,21 +53,31 @@ async function _scrubOpenTabs() {
   const urlType2 = TARGETS.map((d) => `*://${d}/*`);
   const query = urlType1.concat(urlType2);
 
+  // Let critical errors (like tabs.query permission issues) bubble up
   const tabs = await chrome.tabs.query({ url: query });
   const activeTab = await _getActiveTab();
 
-  for (const t of tabs) {
-    try {
-      if (_isActiveTab(t, activeTab)) {
-        // active tab: reload and display a block page
-        await chrome.tabs.reload(t.id);
+  if (tabs.length === 0) {
+    return; // No SNS tabs to process
+  }
+
+  // Handle individual tab operations gracefully
+  const results = await Promise.allSettled(
+    tabs.map(async (tab) => {
+      if (_isActiveTab(tab, activeTab)) {
+        // Active tab: reload to display block page
+        return await _reloadTab(tab);
       } else {
-        // inactive tab: close tab
-        await chrome.tabs.remove(t.id);
+        // Inactive tab: close completely
+        return await _closeTab(tab);
       }
-    } catch {
-      /* nothing */
-    }
+    })
+  );
+
+  // Log any failures for debugging
+  const failures = results.filter(result => result.status === 'rejected');
+  if (failures.length > 0) {
+    console.warn(`Failed to process ${failures.length} out of ${tabs.length} SNS tabs`);
   }
 }
 
@@ -93,4 +103,42 @@ async function _getActiveTab() {
  */
 function _isActiveTab(tab, activeTab) {
   return activeTab && tab.id === activeTab.id;
+}
+
+/**
+ * Reload a tab with proper error handling
+ * @param {chrome.tabs.Tab} tab - The tab to reload
+ * @returns {Promise<void>}
+ */
+async function _reloadTab(tab) {
+  try {
+    await chrome.tabs.reload(tab.id);
+  } catch (error) {
+    // Tab might have been closed or become invalid
+    if (error.message?.includes('No tab with id')) {
+      console.debug(`Tab ${tab.id} no longer exists, skipping reload`);
+    } else {
+      console.warn(`Failed to reload tab ${tab.id}:`, error.message);
+      throw error;
+    }
+  }
+}
+
+/**
+ * Close a tab with proper error handling
+ * @param {chrome.tabs.Tab} tab - The tab to close
+ * @returns {Promise<void>}
+ */
+async function _closeTab(tab) {
+  try {
+    await chrome.tabs.remove(tab.id);
+  } catch (error) {
+    // Tab might have already been closed
+    if (error.message?.includes('No tab with id')) {
+      console.debug(`Tab ${tab.id} already closed`);
+    } else {
+      console.warn(`Failed to close tab ${tab.id}:`, error.message);
+      throw error;
+    }
+  }
 }
