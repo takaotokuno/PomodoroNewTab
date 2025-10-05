@@ -177,7 +177,6 @@ export default class TimerState {
   /**
    * Rebuild a TimerState instance from a previously saved snapshot.
    * This method reconstructs timestamps and durations, then performs
-   * a single update to normalize derived fields (elapsed values).
    * @param {object} snap - Snapshot previously created by toSnapshot().
    * @returns {TimerState}
    */
@@ -198,7 +197,6 @@ export default class TimerState {
     t.totalElapsed = Date.now() - t.totalStartTime;
     t.sessionElapsed = Date.now() - t.sessionStartTime;
 
-    t.update();
     return t;
   }
 }

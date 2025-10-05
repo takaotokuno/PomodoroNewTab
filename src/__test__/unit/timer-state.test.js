@@ -106,6 +106,37 @@ describe("TimerState", () => {
     });
   });
 
+  describe("pause() edge cases", () => {
+    test("should not pause if timer is not running", () => {
+      timer.pause(); // Timer is in SETUP mode
+      expect(timer.mode).toBe(TIMER_MODES.SETUP);
+      expect(timer.pausedAt).toBe(null);
+    });
+
+    test("should not pause if timer is already completed", () => {
+      timer.start();
+      timer.mode = TIMER_MODES.COMPLETED;
+      timer.pause();
+      expect(timer.mode).toBe(TIMER_MODES.COMPLETED);
+      expect(timer.pausedAt).toBe(null);
+    });
+  });
+
+  describe("resume() edge cases", () => {
+    test("should not resume if timer is not paused", () => {
+      timer.start();
+      const originalStartTime = timer.totalStartTime;
+      timer.resume(); // Timer is RUNNING, not PAUSED
+      expect(timer.totalStartTime).toBe(originalStartTime);
+      expect(timer.mode).toBe(TIMER_MODES.RUNNING);
+    });
+
+    test("should not resume if timer is in setup mode", () => {
+      timer.resume(); // Timer is in SETUP mode
+      expect(timer.mode).toBe(TIMER_MODES.SETUP);
+    });
+  });
+
   describe("reset()", () => {
     test("should reset timer to initial state", () => {
       timer.start();
@@ -158,6 +189,16 @@ describe("TimerState", () => {
       expect(timer.mode).toBe(TIMER_MODES.COMPLETED);
     });
 
+    test("should return session complete indicator when session switches", () => {
+      const workCompleteTime = mockStartTime + DURATIONS.WORK_SESSION;
+      vi.setSystemTime(workCompleteTime);
+      
+      const result = timer.update();
+
+      expect(result.isSessionComplete).toBe(true);
+      expect(timer.sessionType).toBe(SESSION_TYPES.BREAK);
+    });
+
     test("should switch session when session is complete", () => {
       const workCompleteTime = mockStartTime + DURATIONS.WORK_SESSION;
       const breakCompleteTime = workCompleteTime + DURATIONS.BREAK_SESSION;
@@ -181,6 +222,18 @@ describe("TimerState", () => {
       expect(timer.sessionElapsed).toBe(0);
     });
 
+    test("should limit session duration to remaining total time", () => {
+      // Start with short total time
+      const shortTime =  DURATIONS.WORK_SESSION/(60 * 1000) + 1;
+      timer.start(shortTime); // 28 minutes total (< DURATIONS.WORK_SESSION)
+      const shortBreakTime = mockStartTime + DURATIONS.WORK_SESSION;
+      
+      vi.setSystemTime(shortBreakTime);
+      timer.update(); // Switch to break
+      
+      expect(timer.sessionDuration).toBe(1 * 60 * 1000);
+    });
+
     test("should update elapsed time during active session", () => {
       vi.setSystemTime(elapsedTime);
       timer.update();
@@ -188,21 +241,148 @@ describe("TimerState", () => {
       expect(timer.totalElapsed).toBe(fiveMinutes);
       expect(timer.sessionElapsed).toBe(fiveMinutes);
     });
+  });
 
-    test("can get total remaining time", () => {
-      vi.setSystemTime(elapsedTime);
-      timer.update();
-
-      const remainingTime = timer.getTotalRemaining();
-      expect(remainingTime).toBe(defaultTotal - fiveMinutes);
+  describe("getTotalRemaining()", () => {
+    test("should return full duration when timer just started", () => {
+      timer.start();
+      expect(timer.getTotalRemaining()).toBe(defaultTotal);
     });
 
-    test("getSessionRemaining", () => {
+    test("should return 0 when timer is completed", () => {
+      timer.start();
+      vi.setSystemTime(mockStartTime + defaultTotal + 1000);
+      timer.update();
+      expect(timer.getTotalRemaining()).toBe(0);
+    });
+
+    test("should return correct remaining time", () => {
+      timer.start();
+      vi.setSystemTime(elapsedTime);
+      timer.update();
+      expect(timer.getTotalRemaining()).toBe(defaultTotal - fiveMinutes);
+    });
+  });
+
+  describe("getSessionRemaining()", () => {
+    test("should return full session duration when session just started", () => {
+      timer.start();
+      expect(timer.getSessionRemaining()).toBe(DURATIONS.WORK_SESSION);
+    });
+
+    test("should return next settion duration when session is completed", () => {
+      timer.start();
+      vi.setSystemTime(mockStartTime + DURATIONS.WORK_SESSION);
+      timer.update();
+      expect(timer.getSessionRemaining()).toBe(DURATIONS.BREAK_SESSION);
+    });
+
+    test("should return correct remaining session time", () => {
+      timer.start();
+      vi.setSystemTime(elapsedTime);
+      timer.update();
+      expect(timer.getSessionRemaining()).toBe(DURATIONS.WORK_SESSION - fiveMinutes);
+    });
+  });
+
+  describe("toSnapshot()", () => {
+    test("should create snapshot with all necessary fields", () => {
+      timer.start(30);
+      vi.setSystemTime(elapsedTime);
+      timer.pause();
+
+      const snapshot = timer.toSnapshot();
+
+      expect(snapshot).toEqual({
+        mode: TIMER_MODES.PAUSED,
+        totalStartTime: mockStartTime,
+        totalDuration: 30 * 60 * 1000,
+        sessionType: SESSION_TYPES.WORK,
+        sessionStartTime: mockStartTime,
+        sessionDuration: DURATIONS.WORK_SESSION,
+        pausedAt: elapsedTime,
+      });
+    });
+
+    test("should not include elapsed fields in snapshot", () => {
+      timer.start();
       vi.setSystemTime(elapsedTime);
       timer.update();
 
-      const remainingTime = timer.getSessionRemaining();
-      expect(remainingTime).toBe(DURATIONS.WORK_SESSION - fiveMinutes);
+      const snapshot = timer.toSnapshot();
+
+      expect(snapshot).not.toHaveProperty('totalElapsed');
+      expect(snapshot).not.toHaveProperty('sessionElapsed');
+    });
+  });
+
+  describe("fromSnapshot()", () => {
+    test("should restore timer from valid snapshot", () => {
+      const snapshot = {
+        mode: TIMER_MODES.RUNNING,
+        totalStartTime: mockStartTime,
+        totalDuration: 25 * 60 * 1000,
+        sessionType: SESSION_TYPES.BREAK,
+        sessionStartTime: mockStartTime + DURATIONS.WORK_SESSION,
+        sessionDuration: DURATIONS.BREAK_SESSION,
+        pausedAt: null,
+      };
+
+      vi.setSystemTime(mockStartTime + DURATIONS.WORK_SESSION + fiveMinutes);
+      const restoredTimer = TimerState.fromSnapshot(snapshot);
+
+      expect(restoredTimer.mode).toBe(TIMER_MODES.RUNNING);
+      expect(restoredTimer.sessionType).toBe(SESSION_TYPES.BREAK);
+      expect(restoredTimer.totalDuration).toBe(25 * 60 * 1000);
+      expect(restoredTimer.sessionDuration).toBe(DURATIONS.BREAK_SESSION);
+    });
+
+    test("should return default timer for null snapshot", () => {
+      const restoredTimer = TimerState.fromSnapshot(null);
+
+      expect(restoredTimer.mode).toBe(TIMER_MODES.SETUP);
+      expect(restoredTimer.totalStartTime).toBe(null);
+      expect(restoredTimer.sessionType).toBe(SESSION_TYPES.WORK);
+    });
+
+    test("should return default timer for undefined snapshot", () => {
+      const restoredTimer = TimerState.fromSnapshot(undefined);
+
+      expect(restoredTimer.mode).toBe(TIMER_MODES.SETUP);
+      expect(restoredTimer.totalStartTime).toBe(null);
+    });
+
+    test("should handle partial snapshot with defaults", () => {
+      const partialSnapshot = {
+        mode: TIMER_MODES.RUNNING,
+        totalStartTime: mockStartTime,
+      };
+
+      const restoredTimer = TimerState.fromSnapshot(partialSnapshot);
+
+      expect(restoredTimer.mode).toBe(TIMER_MODES.RUNNING);
+      expect(restoredTimer.totalStartTime).toBe(mockStartTime);
+      expect(restoredTimer.totalDuration).toBe(DURATIONS.DEFAULT_TOTAL_MINUTES * 60 * 1000);
+      expect(restoredTimer.sessionType).toBe(SESSION_TYPES.WORK);
+      expect(restoredTimer.sessionDuration).toBe(DURATIONS.WORK_SESSION);
+    });
+
+    test("should recompute elapsed times based on current time", () => {
+      const snapshot = {
+        mode: TIMER_MODES.RUNNING,
+        totalStartTime: mockStartTime,
+        totalDuration: 60 * 60 * 1000,
+        sessionType: SESSION_TYPES.WORK,
+        sessionStartTime: mockStartTime,
+        sessionDuration: DURATIONS.WORK_SESSION,
+        pausedAt: null,
+      };
+
+      vi.setSystemTime(elapsedTime);
+      const restoredTimer = TimerState.fromSnapshot(snapshot);
+
+      expect(restoredTimer.totalElapsed).toBe(fiveMinutes);
+      expect(restoredTimer.sessionElapsed).toBe(fiveMinutes);
     });
   });
 });
