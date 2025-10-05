@@ -13,7 +13,7 @@ const TARGETS = [
   "nicovideo.jp",
   "syosetu.com",
   "yomou.syosetu.com",
-  "read.amazon.co.jp/manga"
+  "read.amazon.co.jp/manga",
 ];
 
 function _buildRules() {
@@ -78,9 +78,11 @@ async function _scrubOpenTabs() {
   );
 
   // Log any failures for debugging
-  const failures = results.filter(result => result.status === 'rejected');
+  const failures = results.filter((result) => result.status === "rejected");
   if (failures.length > 0) {
-    console.warn(`Failed to process ${failures.length} out of ${tabs.length} SNS tabs`);
+    console.warn(
+      `Failed to process ${failures.length} out of ${tabs.length} SNS tabs`
+    );
   }
 }
 
@@ -90,10 +92,13 @@ async function _scrubOpenTabs() {
  */
 async function _getActiveTab() {
   try {
-    const activeTabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const activeTabs = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     return activeTabs.length > 0 ? activeTabs[0] : null;
   } catch (error) {
-    console.warn('Failed to get active tab:', error);
+    console.warn("Failed to get active tab:", error);
     return null;
   }
 }
@@ -118,7 +123,7 @@ async function _reloadTab(tab) {
     await chrome.tabs.reload(tab.id);
   } catch (error) {
     // Tab might have been closed or become invalid
-    if (error.message?.includes('No tab with id')) {
+    if (error.message?.includes("No tab with id")) {
       console.debug(`Tab ${tab.id} no longer exists, skipping reload`);
     } else {
       console.warn(`Failed to reload tab ${tab.id}:`, error.message);
@@ -137,7 +142,7 @@ async function _closeTab(tab) {
     await chrome.tabs.remove(tab.id);
   } catch (error) {
     // Tab might have already been closed
-    if (error.message?.includes('No tab with id')) {
+    if (error.message?.includes("No tab with id")) {
       console.debug(`Tab ${tab.id} already closed`);
     } else {
       console.warn(`Failed to close tab ${tab.id}:`, error.message);

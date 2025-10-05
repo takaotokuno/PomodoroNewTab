@@ -83,8 +83,6 @@ describe("BackgroundIndex", () => {
       expect(payload).toEqual({ success: true, foo: "bar" });
     });
 
-
-
     test("should respond with error for unknown route", async () => {
       await import("@/background/index.js");
 

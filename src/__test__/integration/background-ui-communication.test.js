@@ -14,7 +14,7 @@ describe("Background-UI Communication Integration", () => {
     vi.clearAllMocks();
     chromeMock = setupChromeMock();
     bgClient = new BGClient();
-    
+
     // Initialize timer state for each test
     await initTimer();
   });
@@ -106,7 +106,9 @@ describe("Background-UI Communication Integration", () => {
     });
 
     it("should handle chrome.runtime.sendMessage failures", async () => {
-      chromeMock.runtime.sendMessage.mockRejectedValue(new Error("Connection failed"));
+      chromeMock.runtime.sendMessage.mockRejectedValue(
+        new Error("Connection failed")
+      );
 
       const result = await bgClient.update();
 
@@ -119,7 +121,7 @@ describe("Background-UI Communication Integration", () => {
       // Simulate background timer state change
       const timer = getTimer();
       timer.start(25);
-      
+
       // Mock the background response to match the timer state
       chromeMock.runtime.sendMessage.mockResolvedValue({
         success: true,
@@ -153,10 +155,7 @@ describe("Background-UI Communication Integration", () => {
       });
 
       // Mock tabs.query to return some tabs
-      chromeMock.tabs.query.mockResolvedValue([
-        { id: 1 },
-        { id: 2 },
-      ]);
+      chromeMock.tabs.query.mockResolvedValue([{ id: 1 }, { id: 2 }]);
 
       await bgClient.start(25);
 
@@ -180,7 +179,7 @@ describe("Background-UI Communication Integration", () => {
 
     it("should execute timer/start route with valid minutes", async () => {
       const minutes = 25;
-      
+
       await routes["timer/start"]({ minutes });
 
       const timer = getTimer();
@@ -189,15 +188,21 @@ describe("Background-UI Communication Integration", () => {
     });
 
     it("should throw error for invalid minutes in timer/start route", async () => {
-      await expect(routes["timer/start"]({ minutes: 0 })).rejects.toThrow("Invalid minutes");
-      await expect(routes["timer/start"]({ minutes: -5 })).rejects.toThrow("Invalid minutes");
-      await expect(routes["timer/start"]({})).rejects.toThrow("Invalid minutes");
+      await expect(routes["timer/start"]({ minutes: 0 })).rejects.toThrow(
+        "Invalid minutes"
+      );
+      await expect(routes["timer/start"]({ minutes: -5 })).rejects.toThrow(
+        "Invalid minutes"
+      );
+      await expect(routes["timer/start"]({})).rejects.toThrow(
+        "Invalid minutes"
+      );
     });
 
     it("should execute timer/pause route correctly", async () => {
       // First start a timer
       await routes["timer/start"]({ minutes: 25 });
-      
+
       // Then pause it
       await routes["timer/pause"]();
 
@@ -209,7 +214,7 @@ describe("Background-UI Communication Integration", () => {
       // Start and pause a timer
       await routes["timer/start"]({ minutes: 25 });
       await routes["timer/pause"]();
-      
+
       // Then resume it
       await routes["timer/resume"]();
 
@@ -220,7 +225,7 @@ describe("Background-UI Communication Integration", () => {
     it("should execute timer/reset route correctly", async () => {
       // Start a timer
       await routes["timer/start"]({ minutes: 25 });
-      
+
       // Then reset it
       await routes["timer/reset"]();
 

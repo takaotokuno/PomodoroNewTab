@@ -93,7 +93,7 @@ describe("SitesGuard", () => {
         { id: 2, url: "https://facebook.com/feed" },
       ];
       const mockActiveTab = { id: 1, url: "https://twitter.com/home" };
-      
+
       chromeMock.tabs.query
         .mockResolvedValueOnce(mockTabs) // First call for SNS tabs
         .mockResolvedValueOnce([mockActiveTab]); // Second call for active tab
@@ -123,12 +123,15 @@ describe("SitesGuard", () => {
         ]),
       });
 
-      expect(chromeMock.tabs.query).toHaveBeenCalledWith({ active: true, currentWindow: true });
-      
+      expect(chromeMock.tabs.query).toHaveBeenCalledWith({
+        active: true,
+        currentWindow: true,
+      });
+
       // Active tab (id: 1) should be reloaded
       expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(1);
       expect(chromeMock.tabs.reload).toHaveBeenCalledWith(1);
-      
+
       // Inactive tab (id: 2) should be removed
       expect(chromeMock.tabs.remove).toHaveBeenCalledTimes(1);
       expect(chromeMock.tabs.remove).toHaveBeenCalledWith(2);
@@ -140,13 +143,15 @@ describe("SitesGuard", () => {
         { id: 2, url: "https://facebook.com/feed" },
       ];
       const mockActiveTab = { id: 1, url: "https://twitter.com/home" };
-      
+
       chromeMock.tabs.query
         .mockResolvedValueOnce(mockTabs) // First call for SNS tabs
         .mockResolvedValueOnce([mockActiveTab]); // Second call for active tab
-      
+
       chromeMock.tabs.reload.mockRejectedValueOnce(new Error("Tab closed"));
-      chromeMock.tabs.remove.mockRejectedValueOnce(new Error("Tab already closed"));
+      chromeMock.tabs.remove.mockRejectedValueOnce(
+        new Error("Tab already closed")
+      );
 
       await expect(enableBlock()).resolves.not.toThrow();
 
@@ -211,10 +216,8 @@ describe("SitesGuard", () => {
     });
 
     test("enableBlock should handle active tab query errors gracefully", async () => {
-      const mockTabs = [
-        { id: 1, url: "https://twitter.com/home" },
-      ];
-      
+      const mockTabs = [{ id: 1, url: "https://twitter.com/home" }];
+
       chromeMock.tabs.query
         .mockResolvedValueOnce(mockTabs) // First call for SNS tabs succeeds
         .mockRejectedValueOnce(new Error("Failed to get active tab")); // Second call for active tab fails

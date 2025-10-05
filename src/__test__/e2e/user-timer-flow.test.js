@@ -10,10 +10,10 @@ const { TIMER_MODES, SESSION_TYPES, DURATIONS } = Constants;
 
 /**
  * E2E Test: Complete User Timer Workflow
- * 
+ *
  * Tests the full user journey from timer start through work session,
  * break session, and completion with proper notifications and state transitions.
- * 
+ *
  * Requirements: 1.4 - E2E testing of complete user workflows
  */
 describe("E2E: Complete User Timer Workflow", () => {
@@ -61,10 +61,9 @@ describe("E2E: Complete User Timer Workflow", () => {
       expect(timer.getSessionRemaining()).toBe(workDuration);
 
       // Verify alarm setup for timer ticking
-      expect(chromeMock.alarms.create).toHaveBeenCalledWith(
-        "POMODORO_TICK",
-        { periodInMinutes: 1 }
-      );
+      expect(chromeMock.alarms.create).toHaveBeenCalledWith("POMODORO_TICK", {
+        periodInMinutes: 1,
+      });
 
       // Step 2: Simulate work session completion
       const workCompleteTime = timer.totalStartTime + workDuration;
@@ -85,7 +84,7 @@ describe("E2E: Complete User Timer Workflow", () => {
           type: "basic",
           iconUrl: "resources/icon.png",
           title: "休憩開始",
-          message: "ブロックを解除したよ。肩の力を抜こう"
+          message: "ブロックを解除したよ。肩の力を抜こう",
         })
       );
 
@@ -107,12 +106,12 @@ describe("E2E: Complete User Timer Workflow", () => {
           type: "basic",
           iconUrl: "resources/icon.png",
           title: "作業開始！",
-          message: "SNSをブロックしたよ。作業に集中しよう"
+          message: "SNSをブロックしたよ。作業に集中しよう",
         })
       );
 
       // Step 4: Simulate timer completion
-      const timerCompleteTime = timer.totalStartTime + (totalMinutes * 60 * 1000);
+      const timerCompleteTime = timer.totalStartTime + totalMinutes * 60 * 1000;
       vi.setSystemTime(timerCompleteTime);
 
       const completeUpdateResult = await bgClient.update();
@@ -130,7 +129,7 @@ describe("E2E: Complete User Timer Workflow", () => {
           type: "basic",
           iconUrl: "resources/icon.png",
           title: "ポモドーロ完了",
-          message: "お疲れ様！また頑張ろう"
+          message: "お疲れ様！また頑張ろう",
         })
       );
     });
@@ -144,7 +143,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       const startTime = timer.totalStartTime;
 
       // Simulate 10 minutes of work
-      const pauseTime = startTime + (10 * 60 * 1000);
+      const pauseTime = startTime + 10 * 60 * 1000;
       vi.setSystemTime(pauseTime);
 
       // Pause timer
@@ -157,7 +156,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       expect(timer.sessionElapsed).toBe(10 * 60 * 1000);
 
       // Simulate 5 minutes pause (should not affect timer)
-      const resumeTime = pauseTime + (5 * 60 * 1000);
+      const resumeTime = pauseTime + 5 * 60 * 1000;
       vi.setSystemTime(resumeTime);
 
       // Resume timer
@@ -170,7 +169,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       expect(timer.sessionElapsed).toBe(10 * 60 * 1000);
 
       // Verify timer continues correctly after resume
-      const afterResumeTime = resumeTime + (5 * 60 * 1000);
+      const afterResumeTime = resumeTime + 5 * 60 * 1000;
       vi.setSystemTime(afterResumeTime);
 
       const updateResult = await bgClient.update();
@@ -190,7 +189,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       const startTime = timer.totalStartTime;
 
       // Simulate 15 minutes of work
-      const resetTime = startTime + (15 * 60 * 1000);
+      const resetTime = startTime + 15 * 60 * 1000;
       vi.setSystemTime(resetTime);
 
       await bgClient.update();
@@ -220,7 +219,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       const firstStartTime = timer.totalStartTime;
 
       // Complete first session
-      const firstCompleteTime = firstStartTime + (25 * 60 * 1000);
+      const firstCompleteTime = firstStartTime + 25 * 60 * 1000;
       vi.setSystemTime(firstCompleteTime);
 
       await bgClient.update();
@@ -233,7 +232,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       expect(timer.mode).toBe(TIMER_MODES.SETUP);
 
       // Start second session
-      const secondSessionTime = firstCompleteTime + (5 * 60 * 1000);
+      const secondSessionTime = firstCompleteTime + 5 * 60 * 1000;
       vi.setSystemTime(secondSessionTime);
 
       await bgClient.start(30);
@@ -245,7 +244,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       expect(timer.sessionStartTime).toBe(secondSessionTime);
 
       // Verify second session works independently
-      const secondProgressTime = secondSessionTime + (10 * 60 * 1000);
+      const secondProgressTime = secondSessionTime + 10 * 60 * 1000;
       vi.setSystemTime(secondProgressTime);
 
       await bgClient.update();
@@ -266,7 +265,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       expect(timer.sessionDuration).toBe(5 * 60 * 1000);
 
       // Complete the short timer
-      const completeTime = startTime + (5 * 60 * 1000);
+      const completeTime = startTime + 5 * 60 * 1000;
       vi.setSystemTime(completeTime);
 
       const updateResult = await bgClient.update();
@@ -310,7 +309,7 @@ describe("E2E: Complete User Timer Workflow", () => {
         expect.stringMatching(/^switch\d+$/),
         expect.objectContaining({
           title: "休憩開始",
-          message: "ブロックを解除したよ。肩の力を抜こう"
+          message: "ブロックを解除したよ。肩の力を抜こう",
         })
       );
 
@@ -327,16 +326,18 @@ describe("E2E: Complete User Timer Workflow", () => {
         expect.stringMatching(/^switch\d+$/),
         expect.objectContaining({
           title: "作業開始！",
-          message: "SNSをブロックしたよ。作業に集中しよう"
+          message: "SNSをブロックしたよ。作業に集中しよう",
         })
       );
     });
 
     it("should handle notification errors gracefully", async () => {
       // Mock notification creation to fail
-      chromeMock.notifications.create.mockImplementation((id, options, callback) => {
-        if (callback) callback(false); // Simulate failure
-      });
+      chromeMock.notifications.create.mockImplementation(
+        (id, options, callback) => {
+          if (callback) callback(false); // Simulate failure
+        }
+      );
 
       const totalMinutes = 30;
 
@@ -366,7 +367,7 @@ describe("E2E: Complete User Timer Workflow", () => {
       let timer = getTimer();
       const startTime = timer.totalStartTime;
 
-      const progressTime = startTime + (15 * 60 * 1000);
+      const progressTime = startTime + 15 * 60 * 1000;
       vi.setSystemTime(progressTime);
 
       await bgClient.update();
@@ -377,7 +378,9 @@ describe("E2E: Complete User Timer Workflow", () => {
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(timer.totalDuration).toBe(totalMinutes * 60 * 1000);
       expect(timer.sessionType).toBe(SESSION_TYPES.WORK);
-      expect(timer.getTotalRemaining()).toBe((totalMinutes * 60 * 1000) - (15 * 60 * 1000));
+      expect(timer.getTotalRemaining()).toBe(
+        totalMinutes * 60 * 1000 - 15 * 60 * 1000
+      );
 
       // Verify timer can create snapshots correctly
       const snapshot = timer.toSnapshot();
@@ -388,7 +391,7 @@ describe("E2E: Complete User Timer Workflow", () => {
         sessionType: SESSION_TYPES.WORK,
         sessionStartTime: startTime,
         sessionDuration: DURATIONS.WORK_SESSION,
-        pausedAt: null
+        pausedAt: null,
       });
 
       // Verify timer can be restored from snapshot

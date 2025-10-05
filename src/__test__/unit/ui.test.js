@@ -314,7 +314,7 @@ describe("UI", () => {
       // Simulate calling setSyncInterval directly when interval already exists
       // This tests the early return in setSyncInterval when this.syncInterval is truthy
       const uiModule = await import("@/ui/ui.js");
-      
+
       // The interval should already be set from initialization, so calling setSyncInterval again should not create a new one
       // We can't directly access the UI instance, but we can test the behavior through visibility change
       const visibilityHandler = document.addEventListener.mock.calls.find(
@@ -360,9 +360,9 @@ describe("UI", () => {
       await import("@/ui/ui.js");
 
       // Get the pause button click handler
-      const pauseHandler = mockElements["pause-button"].addEventListener.mock.calls.find(
-        (call) => call[0] === "click"
-      )[1];
+      const pauseHandler = mockElements[
+        "pause-button"
+      ].addEventListener.mock.calls.find((call) => call[0] === "click")[1];
 
       // Simulate pause button click
       pauseHandler();
@@ -386,9 +386,9 @@ describe("UI", () => {
       await import("@/ui/ui.js");
 
       // Get the pause button click handler (which becomes resume when paused)
-      const pauseHandler = mockElements["pause-button"].addEventListener.mock.calls.find(
-        (call) => call[0] === "click"
-      )[1];
+      const pauseHandler = mockElements[
+        "pause-button"
+      ].addEventListener.mock.calls.find((call) => call[0] === "click")[1];
 
       // Simulate resume button click
       pauseHandler();
