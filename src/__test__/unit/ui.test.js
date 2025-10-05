@@ -48,6 +48,7 @@ describe("UI", () => {
     "running-screen": { style: { display: "none" } },
     "pause-button": { addEventListener: vi.fn(), textContent: "" },
     "reset-button": { addEventListener: vi.fn() },
+    "completed-screen": { style: { display: "none" } },
     "time-display": {},
     "completed-screen": { style: { display: "none" } },
     "new-session-button": { addEventListener: vi.fn() },
@@ -295,6 +296,39 @@ describe("UI", () => {
       expect(setInterval).toHaveBeenCalledWith(expect.any(Function), 60000);
     });
 
+    test("should not set sync interval if one already exists", async () => {
+      const mockState = {
+        mode: TIMER_MODES.RUNNING,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 1500000,
+        sessionRemaining: 1500000,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      // Clear the first setInterval call from initialization
+      setInterval.mockClear();
+
+      // Simulate calling setSyncInterval directly when interval already exists
+      // This tests the early return in setSyncInterval when this.syncInterval is truthy
+      const uiModule = await import("@/ui/ui.js");
+      
+      // The interval should already be set from initialization, so calling setSyncInterval again should not create a new one
+      // We can't directly access the UI instance, but we can test the behavior through visibility change
+      const visibilityHandler = document.addEventListener.mock.calls.find(
+        (call) => call[0] === "visibilitychange"
+      )[1];
+
+      // Mock document as visible to trigger sync (which calls setSyncInterval)
+      document.visibilityState = "visible";
+      visibilityHandler();
+
+      // Should not call setInterval again since interval already exists from initialization
+      expect(setInterval).not.toHaveBeenCalled();
+    });
+
     test("should clear sync interval when timer is not running", async () => {
       const mockState = {
         mode: TIMER_MODES.SETUP,
@@ -308,6 +342,93 @@ describe("UI", () => {
       await import("@/ui/ui.js");
 
       expect(mockTimerTicker.stop).toHaveBeenCalled();
+    });
+  });
+
+  describe("pause/resume functionality", () => {
+    test("should handle pause button click when timer is running", async () => {
+      // Set up initial running state
+      const mockState = {
+        mode: TIMER_MODES.RUNNING,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 1500000,
+        sessionRemaining: 1500000,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      // Get the pause button click handler
+      const pauseHandler = mockElements["pause-button"].addEventListener.mock.calls.find(
+        (call) => call[0] === "click"
+      )[1];
+
+      // Simulate pause button click
+      pauseHandler();
+
+      expect(mockBGClient.pause).toHaveBeenCalled();
+      expect(mockTimerTicker.stop).toHaveBeenCalled();
+      expect(clearInterval).toHaveBeenCalled();
+    });
+
+    test("should handle resume button click when timer is paused", async () => {
+      // Set up initial paused state
+      const mockState = {
+        mode: TIMER_MODES.PAUSED,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 1500000,
+        sessionRemaining: 1500000,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      // Get the pause button click handler (which becomes resume when paused)
+      const pauseHandler = mockElements["pause-button"].addEventListener.mock.calls.find(
+        (call) => call[0] === "click"
+      )[1];
+
+      // Simulate resume button click
+      pauseHandler();
+
+      expect(mockBGClient.resume).toHaveBeenCalled();
+      expect(mockTimerTicker.resume).toHaveBeenCalled();
+      expect(setInterval).toHaveBeenCalled();
+    });
+  });
+
+  describe("view modes", () => {
+    test("should display completed screen when timer is completed", async () => {
+      const mockState = {
+        mode: TIMER_MODES.COMPLETED,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 0,
+        sessionRemaining: 0,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      expect(mockElements["completed-screen"].style.display).toBe("block");
+    });
+
+    test("should display paused screen with resume button text", async () => {
+      const mockState = {
+        mode: TIMER_MODES.PAUSED,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 1500000,
+        sessionRemaining: 1500000,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      expect(mockElements["running-screen"].style.display).toBe("block");
+      expect(mockElements["pause-button"].textContent).toBe("Resume");
     });
   });
 

@@ -371,6 +371,18 @@ describe("TimerState", () => {
       expect(restoredTimer.sessionDuration).toBe(DURATIONS.WORK_SESSION);
     });
 
+    test("should handle snapshot with falsy mode value", () => {
+      const snapshotWithFalsyMode = {
+        mode: 0, // falsy but not null/undefined
+        totalStartTime: mockStartTime,
+      };
+
+      const restoredTimer = TimerState.fromSnapshot(snapshotWithFalsyMode);
+
+      expect(restoredTimer.mode).toBe(TIMER_MODES.SETUP); // Should default to SETUP
+      expect(restoredTimer.totalStartTime).toBe(mockStartTime);
+    });
+
     test("should recompute elapsed times based on current time", () => {
       const snapshot = {
         mode: TIMER_MODES.RUNNING,

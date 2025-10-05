@@ -209,5 +209,20 @@ describe("SitesGuard", () => {
 
       await expect(enableBlock()).rejects.toThrow("Tabs permission denied");
     });
+
+    test("enableBlock should handle active tab query errors gracefully", async () => {
+      const mockTabs = [
+        { id: 1, url: "https://twitter.com/home" },
+      ];
+      
+      chromeMock.tabs.query
+        .mockResolvedValueOnce(mockTabs) // First call for SNS tabs succeeds
+        .mockRejectedValueOnce(new Error("Failed to get active tab")); // Second call for active tab fails
+
+      await expect(enableBlock()).resolves.not.toThrow();
+
+      // Should still process the tabs even if active tab query fails
+      expect(chromeMock.tabs.query).toHaveBeenCalledTimes(2);
+    });
   });
 });
