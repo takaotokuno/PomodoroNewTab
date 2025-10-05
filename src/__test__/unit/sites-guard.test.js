@@ -92,7 +92,11 @@ describe("SitesGuard", () => {
         { id: 1, url: "https://twitter.com/home" },
         { id: 2, url: "https://facebook.com/feed" },
       ];
-      chromeMock.tabs.query.mockResolvedValue(mockTabs);
+      const mockActiveTab = { id: 1, url: "https://twitter.com/home" };
+      
+      chromeMock.tabs.query
+        .mockResolvedValueOnce(mockTabs) // First call for SNS tabs
+        .mockResolvedValueOnce([mockActiveTab]); // Second call for active tab
 
       await enableBlock();
 
@@ -119,9 +123,15 @@ describe("SitesGuard", () => {
         ]),
       });
 
-      expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(2);
+      expect(chromeMock.tabs.query).toHaveBeenCalledWith({ active: true, currentWindow: true });
+      
+      // Active tab (id: 1) should be reloaded
+      expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(1);
       expect(chromeMock.tabs.reload).toHaveBeenCalledWith(1);
-      expect(chromeMock.tabs.reload).toHaveBeenCalledWith(2);
+      
+      // Inactive tab (id: 2) should be removed
+      expect(chromeMock.tabs.remove).toHaveBeenCalledTimes(1);
+      expect(chromeMock.tabs.remove).toHaveBeenCalledWith(2);
     });
 
     test("should handle tab reload errors gracefully", async () => {
@@ -129,13 +139,19 @@ describe("SitesGuard", () => {
         { id: 1, url: "https://twitter.com/home" },
         { id: 2, url: "https://facebook.com/feed" },
       ];
-      chromeMock.tabs.query.mockResolvedValue(mockTabs);
+      const mockActiveTab = { id: 1, url: "https://twitter.com/home" };
+      
+      chromeMock.tabs.query
+        .mockResolvedValueOnce(mockTabs) // First call for SNS tabs
+        .mockResolvedValueOnce([mockActiveTab]); // Second call for active tab
+      
       chromeMock.tabs.reload.mockRejectedValueOnce(new Error("Tab closed"));
-      chromeMock.tabs.reload.mockResolvedValueOnce(undefined);
+      chromeMock.tabs.remove.mockRejectedValueOnce(new Error("Tab already closed"));
 
       await expect(enableBlock()).resolves.not.toThrow();
 
-      expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(2);
+      expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(1);
+      expect(chromeMock.tabs.remove).toHaveBeenCalledTimes(1);
     });
 
     test("should handle empty tabs list", async () => {
