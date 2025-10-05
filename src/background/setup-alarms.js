@@ -24,11 +24,11 @@ export function setupAlarms() {
   });
 }
 
-export async function startTick() {
+export function startTick() {
   // Create a repeating alarm every 1 minute to keep Service Worker alive and update timer state
   chrome.alarms.create(TICK, { periodInMinutes: 1 });
 }
 
-export async function stopTick() {
+export function stopTick() {
   chrome.alarms.clear(TICK);
 }
