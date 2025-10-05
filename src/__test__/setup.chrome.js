@@ -23,11 +23,19 @@ export function setupChromeMock() {
   };
 
   const notifications = {
-    create: vi.fn((id, options, cb) => cb && cb()),
+    create: vi.fn((_id, _options, cb) => cb && cb()),
   };
 
   const declarativeNetRequest = {
-    updateDynamicRules: { updateDynamicRules: vi.fn() },
+    updateDynamicRules: vi.fn().mockResolvedValue(undefined),
+  };
+
+  // Tabs API mock for synchronization testing
+  const tabs = {
+    query: vi.fn().mockResolvedValue([]),
+    reload: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
   };
 
   const chromeMock = {
@@ -36,6 +44,7 @@ export function setupChromeMock() {
     alarms,
     notifications,
     declarativeNetRequest,
+    tabs,
   };
 
   vi.stubGlobal("chrome", chromeMock);

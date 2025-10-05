@@ -1,7 +1,7 @@
 /**
  * Unit tests for setup-alarms.js
  */
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
 
 // Mock timer-store
@@ -29,6 +29,7 @@ describe("SetupAlarms", () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    vi.clearAllMocks();
 
     chromeMock.alarms.onAlarm.addListener.mockImplementation((fn) => {
       listener = fn;
@@ -39,10 +40,6 @@ describe("SetupAlarms", () => {
     setupAlarms = setupAlarmsModule.setupAlarms;
     startTick = setupAlarmsModule.startTick;
     stopTick = setupAlarmsModule.stopTick;
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
   });
 
   describe("setupAlarms()", () => {

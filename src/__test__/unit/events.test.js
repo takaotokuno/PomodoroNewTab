@@ -199,7 +199,7 @@ describe("Events", () => {
       expect(mockStopTick).toHaveBeenCalled();
     });
 
-    test('should disable block and stop tick when timer is completed', async () => {
+    test("should disable block and stop tick when timer is completed", async () => {
       fakeTimer.update.mockReturnValue({ mode: TIMER_MODES.COMPLETED });
 
       await routes["timer/update"]();
@@ -208,7 +208,7 @@ describe("Events", () => {
       expect(mockStopTick).toHaveBeenCalled();
     });
 
-    test('should enable block when work session is complete', async () => {
+    test("should enable block when work session is complete", async () => {
       fakeTimer.update.mockReturnValue({
         sessionType: SESSION_TYPES.WORK,
         isSessionComplete: true,
@@ -219,7 +219,7 @@ describe("Events", () => {
       expect(mockEnableBlock).toHaveBeenCalled();
     });
 
-    test('should disable block when break session is complete', async () => {
+    test("should disable block when break session is complete", async () => {
       fakeTimer.update.mockReturnValue({
         sessionType: SESSION_TYPES.BREAK,
         isSessionComplete: true,
@@ -230,7 +230,7 @@ describe("Events", () => {
       expect(mockDisableBlock).toHaveBeenCalled();
     });
 
-    test('should include complete notification message', async () => {
+    test("should include complete notification message", async () => {
       fakeTimer.update.mockReturnValue({ mode: TIMER_MODES.COMPLETED });
 
       await routes["timer/update"]();
@@ -242,7 +242,7 @@ describe("Events", () => {
       );
     });
 
-    test('should include work session notification message', async () => {
+    test("should include work session notification message", async () => {
       fakeTimer.update.mockReturnValue({
         sessionType: SESSION_TYPES.WORK,
         isSessionComplete: true,
@@ -257,7 +257,7 @@ describe("Events", () => {
       );
     });
 
-    test('should include break session notification message', async () => {
+    test("should include break session notification message", async () => {
       fakeTimer.update.mockReturnValue({
         sessionType: SESSION_TYPES.BREAK,
         isSessionComplete: true,
@@ -272,7 +272,7 @@ describe("Events", () => {
       );
     });
 
-    test('should not call any handlers when update returns null', async () => {
+    test("should not call any handlers when update returns null", async () => {
       fakeTimer.update.mockReturnValue(null);
 
       await routes["timer/update"]();
@@ -283,7 +283,7 @@ describe("Events", () => {
       expect(mockStopTick).not.toHaveBeenCalled();
     });
 
-    test('should not call any handlers when update returns undefined', async () => {
+    test("should not call any handlers when update returns undefined", async () => {
       fakeTimer.update.mockReturnValue(undefined);
 
       await routes["timer/update"]();

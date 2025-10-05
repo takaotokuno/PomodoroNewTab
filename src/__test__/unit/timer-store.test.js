@@ -1,7 +1,7 @@
 /**
  * Unit tests for timer-store.js
  */
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
 import Constants from "@/constants.js";
 
@@ -31,6 +31,7 @@ describe("TimerStore", () => {
 
   beforeEach(async () => {
     vi.resetModules();
+    vi.clearAllMocks();
 
     // Reset mock timer instance
     mockTimerInstance.mode = TIMER_MODES.SETUP;
@@ -41,10 +42,6 @@ describe("TimerStore", () => {
     initTimer = timerStore.initTimer;
     getTimer = timerStore.getTimer;
     saveSnapshot = timerStore.saveSnapshot;
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
   });
 
   describe("initTimer()", () => {

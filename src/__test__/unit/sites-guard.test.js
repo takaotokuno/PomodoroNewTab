@@ -1,0 +1,197 @@
+/**
+ * Unit tests for sites-guard.js
+ */
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { enableBlock, disableBlock } from "@/background/sites-guard.js";
+import { setupChromeMock } from "../setup.chrome.js";
+
+describe("SitesGuard", () => {
+  let chromeMock;
+
+  beforeEach(() => {
+    chromeMock = setupChromeMock();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("enableBlock()", () => {
+    test("should add blocking rules for all target sites", async () => {
+      const mockTabs = [
+        { id: 1, url: "https://twitter.com/home" },
+        { id: 2, url: "https://facebook.com/feed" },
+      ];
+      chromeMock.tabs.query.mockResolvedValue(mockTabs);
+
+      await enableBlock();
+
+      expect(
+        chromeMock.declarativeNetRequest.updateDynamicRules
+      ).toHaveBeenCalledWith({
+        addRules: expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(Number),
+            priority: 1,
+            action: {
+              type: "redirect",
+              redirect: { extensionPath: "/src/ui/ui.html" },
+            },
+            condition: {
+              urlFilter: expect.stringMatching(/\|\|.*\^/),
+              resourceTypes: ["main_frame"],
+            },
+          }),
+        ]),
+        removeRuleIds: [],
+      });
+    });
+
+    test("should create rules for all target domains", async () => {
+      chromeMock.tabs.query.mockResolvedValue([]);
+
+      await enableBlock();
+
+      const call =
+        chromeMock.declarativeNetRequest.updateDynamicRules.mock.calls[0][0];
+      const rules = call.addRules;
+
+      // Should have rules for all target sites
+      const expectedDomains = [
+        "x.com",
+        "twitter.com",
+        "instagram.com",
+        "facebook.com",
+        "tiktok.com",
+        "youtube.com",
+        "reddit.com",
+        "pixiv.net",
+        "nicovideo.jp",
+      ];
+
+      expect(rules).toHaveLength(expectedDomains.length);
+
+      expectedDomains.forEach((domain, index) => {
+        expect(rules[index]).toEqual({
+          id: 10100 + index,
+          priority: 1,
+          action: {
+            type: "redirect",
+            redirect: { extensionPath: "/src/ui/ui.html" },
+          },
+          condition: {
+            urlFilter: `||${domain}^`,
+            resourceTypes: ["main_frame"],
+          },
+        });
+      });
+    });
+
+    test("should reload matching tabs after enabling block", async () => {
+      const mockTabs = [
+        { id: 1, url: "https://twitter.com/home" },
+        { id: 2, url: "https://facebook.com/feed" },
+      ];
+      chromeMock.tabs.query.mockResolvedValue(mockTabs);
+
+      await enableBlock();
+
+      expect(chromeMock.tabs.query).toHaveBeenCalledWith({
+        url: expect.arrayContaining([
+          "*://*.x.com/*",
+          "*://x.com/*",
+          "*://*.twitter.com/*",
+          "*://twitter.com/*",
+          "*://*.instagram.com/*",
+          "*://instagram.com/*",
+          "*://*.facebook.com/*",
+          "*://facebook.com/*",
+          "*://*.tiktok.com/*",
+          "*://tiktok.com/*",
+          "*://*.youtube.com/*",
+          "*://youtube.com/*",
+          "*://*.reddit.com/*",
+          "*://reddit.com/*",
+          "*://*.pixiv.net/*",
+          "*://pixiv.net/*",
+          "*://*.nicovideo.jp/*",
+          "*://nicovideo.jp/*",
+        ]),
+      });
+
+      expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(2);
+      expect(chromeMock.tabs.reload).toHaveBeenCalledWith(1);
+      expect(chromeMock.tabs.reload).toHaveBeenCalledWith(2);
+    });
+
+    test("should handle tab reload errors gracefully", async () => {
+      const mockTabs = [
+        { id: 1, url: "https://twitter.com/home" },
+        { id: 2, url: "https://facebook.com/feed" },
+      ];
+      chromeMock.tabs.query.mockResolvedValue(mockTabs);
+      chromeMock.tabs.reload.mockRejectedValueOnce(new Error("Tab closed"));
+      chromeMock.tabs.reload.mockResolvedValueOnce(undefined);
+
+      await expect(enableBlock()).resolves.not.toThrow();
+
+      expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(2);
+    });
+
+    test("should handle empty tabs list", async () => {
+      chromeMock.tabs.query.mockResolvedValue([]);
+
+      await expect(enableBlock()).resolves.not.toThrow();
+
+      expect(chromeMock.tabs.reload).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("disableBlock()", () => {
+    test("should remove all blocking rules", async () => {
+      await disableBlock();
+
+      expect(
+        chromeMock.declarativeNetRequest.updateDynamicRules
+      ).toHaveBeenCalledWith({
+        addRules: [],
+        removeRuleIds: [
+          10100, 10101, 10102, 10103, 10104, 10105, 10106, 10107, 10108,
+        ],
+      });
+    });
+
+    test("should not reload tabs when disabling", async () => {
+      await disableBlock();
+
+      expect(chromeMock.tabs.query).not.toHaveBeenCalled();
+      expect(chromeMock.tabs.reload).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("error handling", () => {
+    test("enableBlock should handle declarativeNetRequest errors", async () => {
+      chromeMock.declarativeNetRequest.updateDynamicRules.mockRejectedValue(
+        new Error("Permission denied")
+      );
+
+      await expect(enableBlock()).rejects.toThrow("Permission denied");
+    });
+
+    test("disableBlock should handle declarativeNetRequest errors", async () => {
+      chromeMock.declarativeNetRequest.updateDynamicRules.mockRejectedValue(
+        new Error("Permission denied")
+      );
+
+      await expect(disableBlock()).rejects.toThrow("Permission denied");
+    });
+
+    test("enableBlock should handle tabs.query errors", async () => {
+      chromeMock.tabs.query.mockRejectedValue(
+        new Error("Tabs permission denied")
+      );
+
+      await expect(enableBlock()).rejects.toThrow("Tabs permission denied");
+    });
+  });
+});
