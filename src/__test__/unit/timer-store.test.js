@@ -1,98 +1,99 @@
 /**
  * Unit tests for timer-store.js
  */
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { setupChromeMock } from "../setup.chrome";
-import Constants from "@/constants";
+import {
+    describe,
+    test,
+    expect,
+    beforeEach,
+    afterEach,
+    vi,
+} from "vitest";
+import { setupChromeMock } from "../setup.chrome.js";
+import Constants from "@/constants.js";
 const { TIMER_MODES } = Constants;
 
-const SNAPSHOT_KEY = "pomodoroTimerSnapshot";
+describe("TimerStore", () => {
+    const SNAPSHOT_KEY = "pomodoroTimerSnapshot";
 
-beforeEach(() => {
-  setupChromeMock();
-  vi.resetModules();
-});
+    let chromeMock = setupChromeMock();
+    let initTimer, getTimer, saveSnapshot;
 
-afterEach(() => {
-  vi.clearAllMocks();
-});
+    beforeEach(async () => {
+        vi.resetModules();
 
-describe("initTimer", async () => {
-  const { initTimer } = await import("@/background/timer-store.js");
-
-  test("restores a new timer instance when no snapshot exists", async () => {
-    const timer = await initTimer();
-    // `chrome.storage.local.get` is called with the snapshot key
-    expect(globalThis.chrome.storage.local.get).toHaveBeenCalledWith(
-      SNAPSHOT_KEY
-    );
-
-    // initTImer should return a TimerState instance
-    expect(timer).toBeTruthy();
-
-    // default mode should be "setup"
-    expect(timer.mode).toBe(TIMER_MODES.SETUP);
-  });
-
-  test("reuses the same instance when called multiple times", async () => {
-    let timer = await initTimer();
-    timer.start();
-
-    timer = await initTimer();
-
-    // instance should persist its state
-    expect(timer.mode).toBe(TIMER_MODES.RUNNING);
-  });
-
-  test("restores timer state from an existing snapshot", async () => {
-    chrome.storage.local.get.mockResolvedValue({
-      [SNAPSHOT_KEY]: { mode: TIMER_MODES.RUNNING },
+        // Import fresh modules after reset
+        const timerStore = await import("@/background/timer-store.js");
+        initTimer = timerStore.initTimer;
+        getTimer = timerStore.getTimer;
+        saveSnapshot = timerStore.saveSnapshot;
     });
 
-    let timer = await initTimer();
+    afterEach(() => {
+        vi.clearAllMocks();
+    });
 
-    expect(timer.mode).toBe(TIMER_MODES.RUNNING);
-  });
-});
+    describe("initTimer()", () => {
+        test("should restore a new timer instance when no snapshot exists", async () => {
+            const timer = await initTimer();
 
-describe("getTimer", () => {
-  test("throws an error if initTimer has not been called", async () => {
-    const { getTimer } = await import("@/background/timer-store.js");
+            expect(chromeMock.storage.local.get).toHaveBeenCalledWith(SNAPSHOT_KEY);
+            expect(timer).toBeTruthy();
+            expect(timer.mode).toBe(TIMER_MODES.SETUP);
+        });
 
-    expect(() => getTimer()).toThrow("Timer not initialized");
-  });
+        test("should reuse the same instance when called multiple times", async () => {
+            let timer = await initTimer();
+            timer.start();
 
-  test("returns the existing timer after initialization", async () => {
-    const { initTimer, getTimer } = await import("@/background/timer-store.js");
+            timer = await initTimer();
 
-    await initTimer();
-    const timer = await getTimer();
+            expect(timer.mode).toBe(TIMER_MODES.RUNNING);
+        });
 
-    expect(timer).toBeTruthy();
-  });
-});
+        test("should restore timer state from an existing snapshot", async () => {
+            chromeMock.storage.local.get.mockResolvedValue({
+                [SNAPSHOT_KEY]: { mode: TIMER_MODES.RUNNING },
+            });
 
-describe("saveSnapshot", () => {
-  test("does nothing if no timer instance exists", async () => {
-    const { saveSnapshot } = await import("@/background/timer-store.js");
-    await saveSnapshot();
+            const timer = await initTimer();
 
-    // no set operation should be performed
-    expect(globalThis.chrome.storage.local.set).not.toHaveBeenCalled();
-  });
+            expect(timer.mode).toBe(TIMER_MODES.RUNNING);
+        });
+    });
 
-  test("saves the snapthot of the current timer state", async () => {
-    const { initTimer, saveSnapshot } = await import(
-      "@/background/timer-store.js"
-    );
-    let timer = await initTimer();
-    timer.start();
-    await saveSnapshot();
+    describe("getTimer()", () => {
+        test("should throw an error if initTimer has not been called", () => {
+            expect(() => getTimer()).toThrow("Timer not initialized");
+        });
 
-    expect(globalThis.chrome.storage.local.set).toHaveBeenCalledWith(
-      expect.objectContaining({
-        [SNAPSHOT_KEY]: expect.any(Object),
-      })
-    );
-  });
+        test("should return the existing timer after initialization", async () => {
+            await initTimer();
+            const timer = getTimer();
+
+            expect(timer).toBeTruthy();
+        });
+    });
+
+    describe("saveSnapshot()", () => {
+        test("should do nothing if no timer instance exists", async () => {
+            await saveSnapshot();
+
+            expect(chromeMock.storage.local.set).not.toHaveBeenCalled();
+        });
+
+        test("should save the snapshot of the current timer state", async () => {
+            await initTimer();
+            const timer = getTimer();
+            timer.start();
+
+            await saveSnapshot();
+
+            expect(chromeMock.storage.local.set).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    [SNAPSHOT_KEY]: expect.any(Object),
+                })
+            );
+        });
+    });
 });
