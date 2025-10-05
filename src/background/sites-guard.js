@@ -11,6 +11,8 @@ const TARGETS = [
   "reddit.com",
   "pixiv.net",
   "nicovideo.jp",
+  "syosetu.com",
+  "yomou.syosetu.com",
 ];
 
 function _buildRules() {
