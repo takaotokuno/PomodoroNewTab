@@ -69,6 +69,7 @@ describe("BackgroundIndex", () => {
 
   describe("Message Routing", () => {
     test("should route messages to correct handler and respond with success", async () => {
+      const { tabs } = setupChromeMock();
       await import("@/background/index.js");
 
       const done = judgeDone();
@@ -80,6 +81,63 @@ describe("BackgroundIndex", () => {
         type: "timer/start",
       });
       expect(saveSnapshotMock).toHaveBeenCalled();
+      expect(tabs.query).toHaveBeenCalledWith({
+        url: 'src/ui/ui.html*'
+      });
+      expect(payload).toEqual({ success: true, foo: "bar" });
+    });
+
+    test("should synchronize tabs after successful timer operation", async () => {
+      const { tabs } = setupChromeMock();
+      const mockTabs = [
+        { id: 1, url: 'src/ui/ui.html?mode=newtab' },
+        { id: 2, url: 'src/ui/ui.html' }
+      ];
+      tabs.query.mockResolvedValue(mockTabs);
+      
+      await import("@/background/index.js");
+
+      const done = judgeDone();
+      await listener({ type: "timer/start" }, null, sendResponse);
+      await done;
+
+      expect(tabs.query).toHaveBeenCalledWith({
+        url: 'src/ui/ui.html*'
+      });
+      expect(tabs.reload).toHaveBeenCalledTimes(2);
+      expect(tabs.reload).toHaveBeenCalledWith(1);
+      expect(tabs.reload).toHaveBeenCalledWith(2);
+    });
+
+    test("should handle tab reload errors gracefully", async () => {
+      const { tabs } = setupChromeMock();
+      const mockTabs = [
+        { id: 1, url: 'src/ui/ui.html?mode=newtab' },
+        { id: 2, url: 'src/ui/ui.html' }
+      ];
+      tabs.query.mockResolvedValue(mockTabs);
+      tabs.reload.mockRejectedValueOnce(new Error('Tab closed'));
+      
+      await import("@/background/index.js");
+
+      const done = judgeDone();
+      await listener({ type: "timer/start" }, null, sendResponse);
+      const payload = await done;
+
+      expect(tabs.reload).toHaveBeenCalledTimes(2);
+      expect(payload).toEqual({ success: true, foo: "bar" });
+    });
+
+    test("should handle tab query errors gracefully", async () => {
+      const { tabs } = setupChromeMock();
+      tabs.query.mockRejectedValue(new Error('Permission denied'));
+      
+      await import("@/background/index.js");
+
+      const done = judgeDone();
+      await listener({ type: "timer/start" }, null, sendResponse);
+      const payload = await done;
+
       expect(payload).toEqual({ success: true, foo: "bar" });
     });
 
