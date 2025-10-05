@@ -192,7 +192,7 @@ describe("TimerState", () => {
     test("should return session complete indicator when session switches", () => {
       const workCompleteTime = mockStartTime + DURATIONS.WORK_SESSION;
       vi.setSystemTime(workCompleteTime);
-      
+
       const result = timer.update();
 
       expect(result.isSessionComplete).toBe(true);
@@ -224,13 +224,13 @@ describe("TimerState", () => {
 
     test("should limit session duration to remaining total time", () => {
       // Start with short total time
-      const shortTime =  DURATIONS.WORK_SESSION/(60 * 1000) + 1;
+      const shortTime = DURATIONS.WORK_SESSION / (60 * 1000) + 1;
       timer.start(shortTime); // 28 minutes total (< DURATIONS.WORK_SESSION)
       const shortBreakTime = mockStartTime + DURATIONS.WORK_SESSION;
-      
+
       vi.setSystemTime(shortBreakTime);
       timer.update(); // Switch to break
-      
+
       expect(timer.sessionDuration).toBe(1 * 60 * 1000);
     });
 
@@ -281,7 +281,9 @@ describe("TimerState", () => {
       timer.start();
       vi.setSystemTime(elapsedTime);
       timer.update();
-      expect(timer.getSessionRemaining()).toBe(DURATIONS.WORK_SESSION - fiveMinutes);
+      expect(timer.getSessionRemaining()).toBe(
+        DURATIONS.WORK_SESSION - fiveMinutes
+      );
     });
   });
 
@@ -311,8 +313,8 @@ describe("TimerState", () => {
 
       const snapshot = timer.toSnapshot();
 
-      expect(snapshot).not.toHaveProperty('totalElapsed');
-      expect(snapshot).not.toHaveProperty('sessionElapsed');
+      expect(snapshot).not.toHaveProperty("totalElapsed");
+      expect(snapshot).not.toHaveProperty("sessionElapsed");
     });
   });
 
@@ -362,7 +364,9 @@ describe("TimerState", () => {
 
       expect(restoredTimer.mode).toBe(TIMER_MODES.RUNNING);
       expect(restoredTimer.totalStartTime).toBe(mockStartTime);
-      expect(restoredTimer.totalDuration).toBe(DURATIONS.DEFAULT_TOTAL_MINUTES * 60 * 1000);
+      expect(restoredTimer.totalDuration).toBe(
+        DURATIONS.DEFAULT_TOTAL_MINUTES * 60 * 1000
+      );
       expect(restoredTimer.sessionType).toBe(SESSION_TYPES.WORK);
       expect(restoredTimer.sessionDuration).toBe(DURATIONS.WORK_SESSION);
     });
