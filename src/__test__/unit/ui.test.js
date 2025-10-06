@@ -24,6 +24,8 @@ const mockBGClient = {
   resume: vi.fn(),
   reset: vi.fn(),
   update: vi.fn(),
+  saveSoundSettings: vi.fn(),
+  loadSoundSettings: vi.fn(),
 };
 
 const MockBGClient = vi.fn(() => mockBGClient);
@@ -45,12 +47,12 @@ describe("UI", () => {
     "timer-duration": { value: "25" },
     "timer-duration-error": { style: { display: "none" } },
     "start-button": { addEventListener: vi.fn() },
+    "sound-toggle": { addEventListener: vi.fn(), checked: false },
     "running-screen": { style: { display: "none" } },
     "pause-button": { addEventListener: vi.fn(), textContent: "" },
     "reset-button": { addEventListener: vi.fn() },
     "completed-screen": { style: { display: "none" } },
     "time-display": {},
-    "completed-screen": { style: { display: "none" } },
     "new-session-button": { addEventListener: vi.fn() },
   };
 
@@ -74,9 +76,11 @@ describe("UI", () => {
 
     // Reset mocks
     mockBGClient.update.mockResolvedValue(null);
+    mockBGClient.saveSoundSettings.mockResolvedValue({ success: true });
     Object.values(mockElements).forEach((element) => {
       if (element.style) element.style.display = "none";
       if (element.addEventListener) element.addEventListener.mockClear();
+      if (element.hasOwnProperty("checked")) element.checked = false;
     });
   });
 
@@ -103,6 +107,9 @@ describe("UI", () => {
       expect(
         mockElements["new-session-button"].addEventListener
       ).toHaveBeenCalledWith("click", expect.any(Function));
+      expect(
+        mockElements["sound-toggle"].addEventListener
+      ).toHaveBeenCalledWith("change", expect.any(Function));
     });
 
     test("should call syncFromBG during initialization", async () => {
@@ -364,8 +371,8 @@ describe("UI", () => {
         "pause-button"
       ].addEventListener.mock.calls.find((call) => call[0] === "click")[1];
 
-      // Simulate pause button click
-      pauseHandler();
+      // Simulate pause button click (now async)
+      await pauseHandler();
 
       expect(mockBGClient.pause).toHaveBeenCalled();
       expect(mockTimerTicker.stop).toHaveBeenCalled();
@@ -390,8 +397,8 @@ describe("UI", () => {
         "pause-button"
       ].addEventListener.mock.calls.find((call) => call[0] === "click")[1];
 
-      // Simulate resume button click
-      pauseHandler();
+      // Simulate resume button click (now async)
+      await pauseHandler();
 
       expect(mockBGClient.resume).toHaveBeenCalled();
       expect(mockTimerTicker.resume).toHaveBeenCalled();
