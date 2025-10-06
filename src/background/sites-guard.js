@@ -1,23 +1,11 @@
+import Constants from "../constants";
+const { BLOCK_SITES } = Constants;
+
 const RULE_ID_BASE = 10_100;
 const REDIRECT_PATH = "/src/ui/ui.html";
 
-const TARGETS = [
-  "x.com",
-  "twitter.com",
-  "instagram.com",
-  "facebook.com",
-  "tiktok.com",
-  "youtube.com",
-  "reddit.com",
-  "pixiv.net",
-  "nicovideo.jp",
-  "syosetu.com",
-  "yomou.syosetu.com",
-  "read.amazon.co.jp/manga",
-];
-
 function _buildRules() {
-  return TARGETS.map((domain, i) => ({
+  return BLOCK_SITES.map((domain, i) => ({
     id: RULE_ID_BASE + i,
     priority: 1,
     action: {
@@ -32,7 +20,7 @@ function _buildRules() {
 }
 
 function _allRuleIds() {
-  return TARGETS.map((_, i) => RULE_ID_BASE + i);
+  return BLOCK_SITES.map((_, i) => RULE_ID_BASE + i);
 }
 
 export async function enableBlock() {
@@ -52,8 +40,8 @@ export async function disableBlock() {
 }
 
 async function _scrubOpenTabs() {
-  const urlType1 = TARGETS.map((d) => `*://*.${d}/*`);
-  const urlType2 = TARGETS.map((d) => `*://${d}/*`);
+  const urlType1 = BLOCK_SITES.map((d) => `*://*.${d}/*`);
+  const urlType2 = BLOCK_SITES.map((d) => `*://${d}/*`);
   const query = urlType1.concat(urlType2);
 
   // Let critical errors (like tabs.query permission issues) bubble up

@@ -22,4 +22,19 @@ export default class Constants {
     WORK: "work",
     BREAK: "break",
   };
+
+  static BLOCK_SITES = [
+    "x.com",
+    "twitter.com",
+    "instagram.com",
+    "facebook.com",
+    "tiktok.com",
+    "youtube.com",
+    "reddit.com",
+    "pixiv.net",
+    "nicovideo.jp",
+    "syosetu.com",
+    "yomou.syosetu.com",
+    "read.amazon.co.jp/manga",
+  ];
 }

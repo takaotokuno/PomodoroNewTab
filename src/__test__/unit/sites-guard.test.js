@@ -4,6 +4,8 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { enableBlock, disableBlock } from "@/background/sites-guard.js";
 import { setupChromeMock } from "../setup.chrome.js";
+import Constants from "../../constants.js";
+const { BLOCK_SITES } = Constants;
 
 describe("SitesGuard", () => {
   let chromeMock;
@@ -56,22 +58,9 @@ describe("SitesGuard", () => {
         chromeMock.declarativeNetRequest.updateDynamicRules.mock.calls[0][0];
       const rules = call.addRules;
 
-      // Should have rules for all target sites
-      const expectedDomains = [
-        "x.com",
-        "twitter.com",
-        "instagram.com",
-        "facebook.com",
-        "tiktok.com",
-        "youtube.com",
-        "reddit.com",
-        "pixiv.net",
-        "nicovideo.jp",
-      ];
+      expect(rules).toHaveLength(BLOCK_SITES.length);
 
-      expect(rules).toHaveLength(expectedDomains.length);
-
-      expectedDomains.forEach((domain, index) => {
+      BLOCK_SITES.forEach((domain, index) => {
         expect(rules[index]).toEqual({
           id: 10100 + index,
           priority: 1,
@@ -177,7 +166,7 @@ describe("SitesGuard", () => {
       ).toHaveBeenCalledWith({
         addRules: [],
         removeRuleIds: [
-          10100, 10101, 10102, 10103, 10104, 10105, 10106, 10107, 10108,
+          10100, 10101, 10102, 10103, 10104, 10105, 10106, 10107, 10108, 10109, 10110, 10111,
         ],
       });
     });
