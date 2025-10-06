@@ -11,7 +11,8 @@
     "tabs",
     "notifications",
     "alarms",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "offscreen"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -20,7 +21,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/ui/ui.html", "src/ui/ui.js", "src/ui/ui.css"],
+      "resources": [
+        "src/ui/ui.html",
+        "src/ui/ui.js",
+        "src/ui/ui.css",
+        "resources/nature-sound.mp3"
+      ],
       "matches": ["<all_urls>"]
     }
   ]
