@@ -7,7 +7,7 @@ class UIController {
   constructor() {
     this.mode = TIMER_MODES.SETUP;
     this.syncInterval = null;
-    
+
     this.ticker = new TimerTicker(this);
     this.bgClient = new BGClient();
 

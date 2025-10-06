@@ -13,3 +13,6 @@ package-lock.json
 
 # eslint
 .eslintcache
+
+# Resources
+resources/nature-sound.mp3
