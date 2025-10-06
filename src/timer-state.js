@@ -66,6 +66,10 @@ export default class TimerState {
     this.sessionDuration = DURATIONS.WORK_SESSION;
     this.sessionElapsed = 0;
     this.pausedAt = null;
+    // soundEnabled is preserved across resets
+    if (this.soundEnabled === undefined) {
+      this.soundEnabled = false; // Only set default on first initialization
+    }
   }
 
   /**
@@ -171,6 +175,7 @@ export default class TimerState {
       sessionStartTime: this.sessionStartTime,
       sessionDuration: this.sessionDuration,
       pausedAt: this.pausedAt,
+      soundEnabled: this.soundEnabled,
     };
   }
 
@@ -192,6 +197,7 @@ export default class TimerState {
     t.sessionStartTime = snap.sessionStartTime ?? null;
     t.sessionDuration = snap.sessionDuration ?? DURATIONS.WORK_SESSION;
     t.pausedAt = snap.pausedAt ?? null;
+    t.soundEnabled = snap.soundEnabled ?? false; // Default to false if not present
 
     // Recompute elapsed fields based on wall-clock time
     t.totalElapsed = Date.now() - t.totalStartTime;
