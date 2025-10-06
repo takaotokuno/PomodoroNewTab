@@ -47,6 +47,7 @@ describe("TimerState", () => {
       expect(timer.sessionDuration).toBe(DURATIONS.WORK_SESSION);
       expect(timer.sessionElapsed).toBe(0);
       expect(timer.pausedAt).toBe(null);
+      expect(timer.soundEnabled).toBe(false);
     });
   });
 
@@ -155,6 +156,12 @@ describe("TimerState", () => {
       expect(timer.sessionDuration).toBe(DURATIONS.WORK_SESSION);
       expect(timer.sessionElapsed).toBe(0);
       expect(timer.pausedAt).toBe(null);
+    });
+
+    test("should not reset sound settings when timer is reset", () => {
+      timer.soundEnabled = true;
+      timer.reset();
+      expect(timer.soundEnabled).toBe(true);
     });
   });
 
@@ -303,6 +310,7 @@ describe("TimerState", () => {
         sessionStartTime: mockStartTime,
         sessionDuration: DURATIONS.WORK_SESSION,
         pausedAt: elapsedTime,
+        soundEnabled: false,
       });
     });
 
@@ -328,6 +336,7 @@ describe("TimerState", () => {
         sessionStartTime: mockStartTime + DURATIONS.WORK_SESSION,
         sessionDuration: DURATIONS.BREAK_SESSION,
         pausedAt: null,
+        soundEnabled: true,
       };
 
       vi.setSystemTime(mockStartTime + DURATIONS.WORK_SESSION + fiveMinutes);
@@ -337,6 +346,7 @@ describe("TimerState", () => {
       expect(restoredTimer.sessionType).toBe(SESSION_TYPES.BREAK);
       expect(restoredTimer.totalDuration).toBe(25 * 60 * 1000);
       expect(restoredTimer.sessionDuration).toBe(DURATIONS.BREAK_SESSION);
+      expect(restoredTimer.soundEnabled).toBe(true);
     });
 
     test("should return default timer for null snapshot", () => {
@@ -345,6 +355,7 @@ describe("TimerState", () => {
       expect(restoredTimer.mode).toBe(TIMER_MODES.SETUP);
       expect(restoredTimer.totalStartTime).toBe(null);
       expect(restoredTimer.sessionType).toBe(SESSION_TYPES.WORK);
+      expect(restoredTimer.soundEnabled).toBe(false);
     });
 
     test("should return default timer for undefined snapshot", () => {
