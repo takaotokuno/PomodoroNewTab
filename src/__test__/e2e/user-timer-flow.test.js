@@ -392,6 +392,7 @@ describe("E2E: Complete User Timer Workflow", () => {
         sessionStartTime: startTime,
         sessionDuration: DURATIONS.WORK_SESSION,
         pausedAt: null,
+        soundEnabled: false,
       });
 
       // Verify timer can be restored from snapshot
