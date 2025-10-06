@@ -6,8 +6,10 @@ const { TIMER_MODES, SESSION_TYPES } = Constants;
 class UIController {
   constructor() {
     this.mode = TIMER_MODES.SETUP;
-    this.ticker = new TimerTicker(this);
     this.syncInterval = null;
+    
+    this.ticker = new TimerTicker(this);
+    this.bgClient = new BGClient();
 
     // UI Elements
     // Setup Screen
@@ -15,6 +17,7 @@ class UIController {
     this.timerDurationInput = document.getElementById("timer-duration");
     this.timerDurationError = document.getElementById("timer-duration-error");
     this.startButton = document.getElementById("start-button");
+    this.soundToggle = document.getElementById("sound-toggle");
 
     // Running Screen
     this.runningScreen = document.getElementById("running-screen");
@@ -26,14 +29,13 @@ class UIController {
     this.completedScreen = document.getElementById("completed-screen");
     this.newSessionButton = document.getElementById("new-session-button");
 
-    this.bgClient = new BGClient();
     this.attachEventListeners();
 
     this.syncFromBG();
   }
 
   attachEventListeners() {
-    this.startButton.addEventListener("click", () => {
+    this.startButton.addEventListener("click", async () => {
       const minutes = parseInt(this.timerDurationInput.value, 10);
       if (!isNaN(minutes) && minutes >= 5 && minutes <= 300) {
         this.bgClient.start(minutes);
@@ -50,7 +52,7 @@ class UIController {
       }
     });
 
-    this.pauseButton.addEventListener("click", () => {
+    this.pauseButton.addEventListener("click", async () => {
       if (this.mode === TIMER_MODES.RUNNING) {
         this.bgClient.pause();
         this.ticker.stop();
@@ -69,16 +71,21 @@ class UIController {
       this.updateView();
     });
 
-    this.resetButton.addEventListener("click", () => {
-      this.resetView();
+    this.resetButton.addEventListener("click", async () => {
+      await this.resetView();
     });
 
-    this.newSessionButton.addEventListener("click", () => {
-      this.resetView();
+    this.newSessionButton.addEventListener("click", async () => {
+      await this.resetView();
+    });
+
+    this.soundToggle.addEventListener("change", async () => {
+      const isEnabled = this.soundToggle.checked;
+      this.bgClient.saveSoundSettings(isEnabled);
     });
   }
 
-  resetView() {
+  async resetView() {
     this.bgClient.reset();
     this.ticker.stop();
 
@@ -146,6 +153,9 @@ class UIController {
       this.ticker.stop();
       this.clearSyncInterval();
     }
+
+    const soundEnabled = state.soundEnabled ?? false;
+    this.soundToggle.checked = soundEnabled;
 
     this.updateView();
   }

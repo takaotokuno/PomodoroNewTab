@@ -23,6 +23,10 @@ export class BGClient {
     return this._send("timer/reset");
   }
 
+  async saveSoundSettings(settings) {
+    return this._send("sound/save", { settings });
+  }
+
   async _send(type, payload = {}) {
     try {
       const res = await chrome.runtime.sendMessage({ type, ...payload });
