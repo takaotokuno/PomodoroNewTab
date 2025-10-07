@@ -22,5 +22,9 @@ export async function handleSound() {
 }
 
 function stopAudio(){
+  console.log("stop");
+}
 
+function playAudio(){
+  console.log("play");
 }

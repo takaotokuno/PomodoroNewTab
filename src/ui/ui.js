@@ -17,7 +17,6 @@ class UIController {
     this.timerDurationInput = document.getElementById("timer-duration");
     this.timerDurationError = document.getElementById("timer-duration-error");
     this.startButton = document.getElementById("start-button");
-    this.soundToggle = document.getElementById("sound-toggle");
 
     // Running Screen
     this.runningScreen = document.getElementById("running-screen");
@@ -28,6 +27,9 @@ class UIController {
     // Completed Screen
     this.completedScreen = document.getElementById("completed-screen");
     this.newSessionButton = document.getElementById("new-session-button");
+
+    // Sound Setting
+    this.soundToggle = document.getElementById("sound-toggle");
 
     this.attachEventListeners();
 
