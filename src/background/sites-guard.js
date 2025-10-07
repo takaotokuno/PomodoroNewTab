@@ -1,4 +1,4 @@
-import Constants from "../constants";
+import Constants from "../constants.js";
 const { BLOCK_SITES } = Constants;
 
 const RULE_ID_BASE = 10_100;

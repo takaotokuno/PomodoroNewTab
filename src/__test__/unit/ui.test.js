@@ -25,7 +25,6 @@ const mockBGClient = {
   reset: vi.fn(),
   update: vi.fn(),
   saveSoundSettings: vi.fn(),
-  loadSoundSettings: vi.fn(),
 };
 
 const MockBGClient = vi.fn(() => mockBGClient);
@@ -53,6 +52,7 @@ describe("UI", () => {
     "reset-button": { addEventListener: vi.fn() },
     "completed-screen": { style: { display: "none" } },
     "time-display": {},
+    "completed-screen": { style: { display: "none" }},
     "new-session-button": { addEventListener: vi.fn() },
   };
 
