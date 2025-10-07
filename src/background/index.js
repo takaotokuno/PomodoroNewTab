@@ -8,6 +8,7 @@
 
 import { initTimer, saveSnapshot } from "./timer-store.js";
 import { setupAlarms } from "./setup-alarms.js";
+import { setupSound } from "./sound-controller.js";
 import { routes } from "./events.js";
 
 // Ensure timer is restored on extension install and browser startup
@@ -15,6 +16,8 @@ chrome.runtime.onInstalled.addListener(initTimer);
 chrome.runtime.onStartup.addListener(initTimer);
 
 setupAlarms();
+
+setupSound();
 
 /**
  * Global message handler for extension runtime.
