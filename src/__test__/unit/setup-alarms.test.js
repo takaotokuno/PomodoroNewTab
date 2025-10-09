@@ -60,32 +60,24 @@ describe("SetupAlarms", () => {
     });
 
     test("should handle POMODORO_TICK flow in correct order", async () => {
-      const { getTimer, saveSnapshot, __mockTimer } = await import(
-        "@/background/timer-store.js"
-      );
       const { handleEvents } = await import("@/background/events.js");
 
       setupAlarms();
       await listener({ name: TICK });
 
-      expect(getTimer).toHaveBeenCalled();
-      expect(__mockTimer.update).toHaveBeenCalled();
-
-      const updateResult = __mockTimer.update.mock.results[0].value;
-      expect(handleEvents).toHaveBeenCalledWith(updateResult);
-      expect(saveSnapshot).toHaveBeenCalled();
+      expect(handleEvents).toHaveBeenCalledWith("timer/update");
     });
 
     test("should propagate errors from handleEvents and not save snapshot", async () => {
-      const { saveSnapshot } = await import("@/background/timer-store.js");
       const { handleEvents } = await import("@/background/events.js");
 
       handleEvents.mockRejectedValueOnce(new Error("boom"));
 
       setupAlarms();
 
-      await expect(listener({ name: TICK })).rejects.toThrow("boom");
-      expect(saveSnapshot).not.toHaveBeenCalled();
+      // The error should be caught and logged, not propagated
+      await listener({ name: TICK });
+      expect(handleEvents).toHaveBeenCalledWith("timer/update");
     });
 
     test("should only register listener once when called multiple times", () => {
@@ -95,68 +87,62 @@ describe("SetupAlarms", () => {
       expect(chromeMock.alarms.onAlarm.addListener).toHaveBeenCalledTimes(1);
     });
 
-    test("should return early when getTimer returns null", async () => {
-      const { getTimer } = await import("@/background/timer-store.js");
+    test("should call handleEvents even when getTimer returns null", async () => {
       const { handleEvents } = await import("@/background/events.js");
-
-      getTimer.mockReturnValueOnce(null);
 
       setupAlarms();
       await listener({ name: TICK });
 
-      expect(getTimer).toHaveBeenCalled();
-      expect(handleEvents).not.toHaveBeenCalled();
+      expect(handleEvents).toHaveBeenCalledWith("timer/update");
     });
 
-    test("should return early when getTimer returns undefined", async () => {
-      const { getTimer } = await import("@/background/timer-store.js");
+    test("should call handleEvents even when getTimer returns undefined", async () => {
       const { handleEvents } = await import("@/background/events.js");
-
-      getTimer.mockReturnValueOnce(undefined);
 
       setupAlarms();
       await listener({ name: TICK });
 
-      expect(getTimer).toHaveBeenCalled();
-      expect(handleEvents).not.toHaveBeenCalled();
+      expect(handleEvents).toHaveBeenCalledWith("timer/update");
     });
 
-    test("should propagate errors from getTimer", async () => {
-      const { getTimer } = await import("@/background/timer-store.js");
-
-      getTimer.mockImplementationOnce(() => {
-        throw new Error("getTimer error");
-      });
-
-      setupAlarms();
-
-      await expect(listener({ name: TICK })).rejects.toThrow("getTimer error");
-    });
-
-    test("should propagate errors from timer.update", async () => {
-      const { __mockTimer } = await import("@/background/timer-store.js");
-
-      __mockTimer.update.mockImplementationOnce(() => {
-        throw new Error("update error");
-      });
-
-      setupAlarms();
-
-      await expect(listener({ name: TICK })).rejects.toThrow("update error");
-    });
-
-    test("should propagate errors from saveSnapshot and not call it after handleEvents error", async () => {
-      const { saveSnapshot } = await import("@/background/timer-store.js");
+    test("should handle errors from handleEvents", async () => {
       const { handleEvents } = await import("@/background/events.js");
 
       handleEvents.mockRejectedValueOnce(new Error("handleEvents error"));
 
       setupAlarms();
 
-      await expect(listener({ name: TICK })).rejects.toThrow(
-        "handleEvents error"
-      );
-      expect(saveSnapshot).not.toHaveBeenCalled();
+      // The error should be caught and logged, not propagated
+      await listener({ name: TICK });
+      expect(handleEvents).toHaveBeenCalledWith("timer/update");
+    });
+
+    test("should handle errors from handleEvents gracefully", async () => {
+      const { handleEvents } = await import("@/background/events.js");
+
+      handleEvents.mockRejectedValueOnce(new Error("update error"));
+
+      setupAlarms();
+
+      // The error should be caught and logged, not propagated
+      await listener({ name: TICK });
+      expect(handleEvents).toHaveBeenCalledWith("timer/update");
+    });
+
+    test("should handle errors from handleEvents and log them", async () => {
+      const { handleEvents } = await import("@/background/events.js");
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      handleEvents.mockRejectedValueOnce(new Error("handleEvents error"));
+
+      setupAlarms();
+
+      await listener({ name: TICK });
+      
+      expect(handleEvents).toHaveBeenCalledWith("timer/update");
+      expect(consoleSpy).toHaveBeenCalledWith("Alarm message failed:", expect.any(Error));
+      
+      consoleSpy.mockRestore();
     });
 
     test("should handle alarm object without name property", async () => {

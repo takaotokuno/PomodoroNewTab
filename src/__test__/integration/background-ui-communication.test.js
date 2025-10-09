@@ -3,7 +3,7 @@ import { setupChromeMock } from "../setup.chrome.js";
 import { BGClient } from "../../ui/bg-client.js";
 
 // Import background modules to test integration
-import { routes } from "../../background/events.js";
+import { handleEvents } from "../../background/events.js";
 import { initTimer, getTimer } from "../../background/timer-store.js";
 
 describe("Background-UI Communication Integration", () => {
@@ -167,9 +167,9 @@ describe("Background-UI Communication Integration", () => {
     });
   });
 
-  describe("Route Handler Integration", () => {
-    it("should execute timer/update route correctly", async () => {
-      const result = await routes["timer/update"]();
+  describe("Event Handler Integration", () => {
+    it("should execute timer/update event correctly", async () => {
+      const result = await handleEvents("timer/update");
 
       expect(result).toHaveProperty("mode");
       expect(result).toHaveProperty("totalRemaining");
@@ -177,57 +177,57 @@ describe("Background-UI Communication Integration", () => {
       expect(result).toHaveProperty("sessionRemaining");
     });
 
-    it("should execute timer/start route with valid minutes", async () => {
+    it("should execute timer/start event with valid minutes", async () => {
       const minutes = 25;
 
-      await routes["timer/start"]({ minutes });
+      await handleEvents("timer/start", { minutes });
 
       const timer = getTimer();
       expect(timer.mode).toBe("running");
       expect(timer.sessionType).toBe("work");
     });
 
-    it("should throw error for invalid minutes in timer/start route", async () => {
-      await expect(routes["timer/start"]({ minutes: 0 })).rejects.toThrow(
+    it("should throw error for invalid minutes in timer/start event", async () => {
+      await expect(handleEvents("timer/start", { minutes: 0 })).rejects.toThrow(
         "Invalid minutes"
       );
-      await expect(routes["timer/start"]({ minutes: -5 })).rejects.toThrow(
+      await expect(handleEvents("timer/start", { minutes: -5 })).rejects.toThrow(
         "Invalid minutes"
       );
-      await expect(routes["timer/start"]({})).rejects.toThrow(
+      await expect(handleEvents("timer/start", {})).rejects.toThrow(
         "Invalid minutes"
       );
     });
 
-    it("should execute timer/pause route correctly", async () => {
+    it("should execute timer/pause event correctly", async () => {
       // First start a timer
-      await routes["timer/start"]({ minutes: 25 });
+      await handleEvents("timer/start", { minutes: 25 });
 
       // Then pause it
-      await routes["timer/pause"]();
+      await handleEvents("timer/pause");
 
       const timer = getTimer();
       expect(timer.mode).toBe("paused");
     });
 
-    it("should execute timer/resume route correctly", async () => {
+    it("should execute timer/resume event correctly", async () => {
       // Start and pause a timer
-      await routes["timer/start"]({ minutes: 25 });
-      await routes["timer/pause"]();
+      await handleEvents("timer/start", { minutes: 25 });
+      await handleEvents("timer/pause");
 
       // Then resume it
-      await routes["timer/resume"]();
+      await handleEvents("timer/resume");
 
       const timer = getTimer();
       expect(timer.mode).toBe("running");
     });
 
-    it("should execute timer/reset route correctly", async () => {
+    it("should execute timer/reset event correctly", async () => {
       // Start a timer
-      await routes["timer/start"]({ minutes: 25 });
+      await handleEvents("timer/start", { minutes: 25 });
 
       // Then reset it
-      await routes["timer/reset"]();
+      await handleEvents("timer/reset");
 
       const timer = getTimer();
       expect(timer.mode).toBe("setup");

@@ -18,12 +18,16 @@ vi.mock("@/background/setup-alarms.js", () => ({
   setupAlarms: setupAlarmsMock,
 }));
 
-// Mock events routes
-const routesMock = {
-  "timer/start": vi.fn().mockImplementation(async () => ({ foo: "bar" })),
-};
+// Mock sound-controller
+const setupSoundMock = vi.fn();
+vi.mock("@/background/sound-controller.js", () => ({
+  setupSound: setupSoundMock,
+}));
+
+// Mock events handleEvents
+const handleEventsMock = vi.fn().mockImplementation(async () => ({ foo: "bar" }));
 vi.mock("@/background/events.js", () => ({
-  routes: routesMock,
+  handleEvents: handleEventsMock,
 }));
 
 describe("BackgroundIndex", () => {
@@ -75,24 +79,26 @@ describe("BackgroundIndex", () => {
       await listener({ type: "timer/start" }, null, sendResponse);
       const payload = await done;
 
-      expect(initTimerMock).toHaveBeenCalled();
-      expect(routesMock["timer/start"]).toHaveBeenCalledWith({
+      expect(handleEventsMock).toHaveBeenCalledWith("timer/start", {
         type: "timer/start",
       });
-      expect(saveSnapshotMock).toHaveBeenCalled();
       expect(payload).toEqual({ success: true, foo: "bar" });
     });
 
     test("should respond with error for unknown route", async () => {
       await import("@/background/index.js");
 
+      handleEventsMock.mockImplementation(() => {
+        throw new Error("Unknown event type: unknown/type");
+      });
+
       const done = judgeDone();
       await listener({ type: "unknown/type" }, null, sendResponse);
       const payload = await done;
 
       expect(payload).toEqual({
-        ok: false,
-        error: "unknown route",
+        success: false,
+        error: "Unknown event type: unknown/type",
       });
     });
 
@@ -100,7 +106,7 @@ describe("BackgroundIndex", () => {
       await import("@/background/index.js");
 
       const errMsg = "sample error message";
-      routesMock["timer/start"].mockImplementation(() => {
+      handleEventsMock.mockImplementation(() => {
         throw new Error(errMsg);
       });
 
@@ -122,8 +128,8 @@ describe("BackgroundIndex", () => {
       const payload = await done;
 
       expect(payload).toEqual({
-        ok: false,
-        error: "unknown route",
+        success: false,
+        error: "Cannot read properties of null (reading 'type')",
       });
     });
 
@@ -135,34 +141,42 @@ describe("BackgroundIndex", () => {
       const payload = await done;
 
       expect(payload).toEqual({
-        ok: false,
-        error: "unknown route",
+        success: false,
+        error: "Cannot read properties of undefined (reading 'type')",
       });
     });
 
     test("should respond with error when message type is null", async () => {
       await import("@/background/index.js");
 
+      handleEventsMock.mockImplementation(() => {
+        throw new Error("Unknown event type: null");
+      });
+
       const done = judgeDone();
       await listener({ type: null }, null, sendResponse);
       const payload = await done;
 
       expect(payload).toEqual({
-        ok: false,
-        error: "unknown route",
+        success: false,
+        error: "Unknown event type: null",
       });
     });
 
     test("should respond with error when message type is undefined", async () => {
       await import("@/background/index.js");
 
+      handleEventsMock.mockImplementation(() => {
+        throw new Error("Unknown event type: undefined");
+      });
+
       const done = judgeDone();
       await listener({ type: undefined }, null, sendResponse);
       const payload = await done;
 
       expect(payload).toEqual({
-        ok: false,
-        error: "unknown route",
+        success: false,
+        error: "Unknown event type: undefined",
       });
     });
 
@@ -170,7 +184,7 @@ describe("BackgroundIndex", () => {
       await import("@/background/index.js");
 
       const errorObj = { code: 500 };
-      routesMock["timer/start"].mockImplementation(() => {
+      handleEventsMock.mockImplementation(() => {
         throw errorObj;
       });
 
@@ -188,7 +202,7 @@ describe("BackgroundIndex", () => {
       await import("@/background/index.js");
 
       const errorString = "string error";
-      routesMock["timer/start"].mockImplementation(() => {
+      handleEventsMock.mockImplementation(() => {
         throw errorString;
       });
 

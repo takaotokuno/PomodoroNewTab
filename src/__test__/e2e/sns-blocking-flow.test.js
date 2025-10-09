@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
 import { BGClient } from "../../ui/bg-client.js";
 import { initTimer, getTimer } from "../../background/timer-store.js";
-import { routes } from "../../background/events.js";
+import { handleEvents } from "../../background/events.js";
 import Constants from "../../constants.js";
 
 const { TIMER_MODES, SESSION_TYPES, DURATIONS } = Constants;
@@ -32,11 +32,12 @@ describe("E2E: SNS Blocking User Experience", () => {
 
     // Mock successful background responses for all timer operations
     chromeMock.runtime.sendMessage.mockImplementation(async (msg) => {
-      const fn = routes[msg?.type];
-      if (!fn) return { success: false, error: "unknown route" };
-
-      const data = await fn(msg);
-      return { success: true, ...data };
+      try {
+        const data = await handleEvents(msg?.type, msg);
+        return { success: true, ...data };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
     });
   });
 

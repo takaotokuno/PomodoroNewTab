@@ -52,7 +52,7 @@ describe("UI", () => {
     "reset-button": { addEventListener: vi.fn() },
     "completed-screen": { style: { display: "none" } },
     "time-display": {},
-    "completed-screen": { style: { display: "none" }},
+    "completed-screen": { style: { display: "none" } },
     "new-session-button": { addEventListener: vi.fn() },
   };
 
@@ -184,7 +184,7 @@ describe("UI", () => {
 
       const clickHandler =
         mockElements["reset-button"].addEventListener.mock.calls[0][1];
-      clickHandler();
+      await clickHandler();
 
       expect(mockBGClient.reset).toHaveBeenCalled();
       expect(mockTimerTicker.stop).toHaveBeenCalled();
@@ -195,7 +195,7 @@ describe("UI", () => {
 
       const clickHandler =
         mockElements["new-session-button"].addEventListener.mock.calls[0][1];
-      clickHandler();
+      await clickHandler();
 
       expect(mockBGClient.reset).toHaveBeenCalled();
       expect(mockTimerTicker.stop).toHaveBeenCalled();

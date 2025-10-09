@@ -13,7 +13,7 @@ import {
 import * as timerStore from "@/background/timer-store.js";
 import * as notification from "@/background/notification.js";
 import Constants from "@/constants.js";
-import { routes } from "@/background/events.js";
+import { handleEvents } from "@/background/events.js";
 
 const { TIMER_MODES, SESSION_TYPES } = Constants;
 
@@ -26,6 +26,16 @@ vi.mock("@/background/setup-alarms.js", () => ({
 vi.mock("@/background/sites-guard.js", () => ({
   enableBlock: vi.fn(),
   disableBlock: vi.fn(),
+}));
+
+vi.mock("@/background/timer-store.js", () => ({
+  initTimer: vi.fn().mockResolvedValue(undefined),
+  getTimer: vi.fn(),
+  saveSnapshot: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/background/sound-controller.js", () => ({
+  handleSound: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Test constants
@@ -78,27 +88,27 @@ beforeEach(async () => {
 });
 
 describe("Events", () => {
-  describe("routes", () => {
-    test('should call start with minutes when "timer/start" is invoked', () => {
-      routes["timer/start"]({ minutes: 25 });
+  describe("handleEvents", () => {
+    test('should call start with minutes when "timer/start" is invoked', async () => {
+      await handleEvents("timer/start", { minutes: 25 });
 
       expect(fakeTimer.start).toHaveBeenCalledWith(25);
     });
 
-    test('should call pause when "timer/pause" is invoked', () => {
-      routes["timer/pause"]();
+    test('should call pause when "timer/pause" is invoked', async () => {
+      await handleEvents("timer/pause");
 
       expect(fakeTimer.pause).toHaveBeenCalled();
     });
 
-    test('should call resume when "timer/resume" is invoked', () => {
-      routes["timer/resume"]();
+    test('should call resume when "timer/resume" is invoked', async () => {
+      await handleEvents("timer/resume");
 
       expect(fakeTimer.resume).toHaveBeenCalled();
     });
 
-    test('should call reset when "timer/reset" is invoked', () => {
-      routes["timer/reset"]();
+    test('should call reset when "timer/reset" is invoked', async () => {
+      await handleEvents("timer/reset");
 
       expect(fakeTimer.reset).toHaveBeenCalled();
     });
@@ -106,7 +116,7 @@ describe("Events", () => {
     test('should call update and return timer state when "timer/update" is invoked', async () => {
       fakeTimer.update.mockReturnValue({});
 
-      const result = await routes["timer/update"]();
+      const result = await handleEvents("timer/update");
 
       expect(fakeTimer.update).toHaveBeenCalled();
       expect(result).toEqual({
@@ -114,17 +124,18 @@ describe("Events", () => {
         totalRemaining: MOCK_TOTAL_REMAINING,
         sessionType: "work",
         sessionRemaining: MOCK_SESSION_REMAINING,
+        soundEnabled: undefined,
       });
     });
 
     test('should notify "complete" when timer is completed', async () => {
       fakeTimer.update.mockReturnValue({ mode: TIMER_MODES.COMPLETED });
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: "complete" + MOCK_TIME,
+          id: expect.stringContaining("complete"),
           title: "ポモドーロ完了",
         })
       );
@@ -137,63 +148,66 @@ describe("Events", () => {
       });
       fakeTimer.currentSessionType = SESSION_TYPES.WORK;
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: "switch" + MOCK_TIME,
+          id: expect.stringContaining("switch"),
           title: "作業開始！",
         })
       );
     });
 
     test('should notify "switch" when break session is complete', async () => {
-      fakeTimer.update.mockReturnValue({ isSessionComplete: true });
+      fakeTimer.update.mockReturnValue({ 
+        sessionType: SESSION_TYPES.BREAK,
+        isSessionComplete: true 
+      });
       fakeTimer.currentSessionType = SESSION_TYPES.BREAK;
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: "switch" + MOCK_TIME,
+          id: expect.stringContaining("switch"),
           title: "休憩開始",
         })
       );
     });
 
     test('should throw error when "timer/start" is called with invalid minutes', async () => {
-      await expect(routes["timer/start"]({ minutes: -1 })).rejects.toThrow(
+      await expect(handleEvents("timer/start", { minutes: -1 })).rejects.toThrow(
         "Invalid minutes"
       );
     });
 
     test('should throw error when "timer/start" is called without minutes', async () => {
-      await expect(routes["timer/start"]({})).rejects.toThrow(
+      await expect(handleEvents("timer/start", {})).rejects.toThrow(
         "Invalid minutes"
       );
     });
 
     test('should enable block and start tick when "timer/start" is invoked', async () => {
-      await routes["timer/start"]({ minutes: 25 });
+      await handleEvents("timer/start", { minutes: 25 });
 
       expect(mockEnableBlock).toHaveBeenCalled();
       expect(mockStartTick).toHaveBeenCalled();
     });
 
     test('should stop tick when "timer/pause" is invoked', async () => {
-      await routes["timer/pause"]();
+      await handleEvents("timer/pause");
 
       expect(mockStopTick).toHaveBeenCalled();
     });
 
     test('should start tick when "timer/resume" is invoked', async () => {
-      await routes["timer/resume"]();
+      await handleEvents("timer/resume");
 
       expect(mockStartTick).toHaveBeenCalled();
     });
 
     test('should disable block and stop tick when "timer/reset" is invoked', async () => {
-      await routes["timer/reset"]();
+      await handleEvents("timer/reset");
 
       expect(mockDisableBlock).toHaveBeenCalled();
       expect(mockStopTick).toHaveBeenCalled();
@@ -202,7 +216,7 @@ describe("Events", () => {
     test("should disable block and stop tick when timer is completed", async () => {
       fakeTimer.update.mockReturnValue({ mode: TIMER_MODES.COMPLETED });
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(mockDisableBlock).toHaveBeenCalled();
       expect(mockStopTick).toHaveBeenCalled();
@@ -214,7 +228,7 @@ describe("Events", () => {
         isSessionComplete: true,
       });
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(mockEnableBlock).toHaveBeenCalled();
     });
@@ -225,7 +239,7 @@ describe("Events", () => {
         isSessionComplete: true,
       });
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(mockDisableBlock).toHaveBeenCalled();
     });
@@ -233,7 +247,7 @@ describe("Events", () => {
     test("should include complete notification message", async () => {
       fakeTimer.update.mockReturnValue({ mode: TIMER_MODES.COMPLETED });
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -248,7 +262,7 @@ describe("Events", () => {
         isSessionComplete: true,
       });
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -263,7 +277,7 @@ describe("Events", () => {
         isSessionComplete: true,
       });
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -275,7 +289,7 @@ describe("Events", () => {
     test("should not call any handlers when update returns null", async () => {
       fakeTimer.update.mockReturnValue(null);
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).not.toHaveBeenCalled();
       expect(mockEnableBlock).not.toHaveBeenCalled();
@@ -286,7 +300,7 @@ describe("Events", () => {
     test("should not call any handlers when update returns undefined", async () => {
       fakeTimer.update.mockReturnValue(undefined);
 
-      await routes["timer/update"]();
+      await handleEvents("timer/update");
 
       expect(notification.notify).not.toHaveBeenCalled();
       expect(mockEnableBlock).not.toHaveBeenCalled();

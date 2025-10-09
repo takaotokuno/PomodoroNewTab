@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
 import { enableBlock, disableBlock } from "../../background/sites-guard.js";
-import { routes } from "../../background/events.js";
+import { handleEvents } from "../../background/events.js";
 import { initTimer, getTimer } from "../../background/timer-store.js";
 
 describe("SNS Blocking Integration", () => {
@@ -19,7 +19,7 @@ describe("SNS Blocking Integration", () => {
     it("should enable blocking rules when timer starts", async () => {
       const minutes = 25;
 
-      await routes["timer/start"]({ minutes });
+      await handleEvents("timer/start", { minutes });
 
       // Verify that declarativeNetRequest.updateDynamicRules was called to add rules
       expect(
@@ -45,11 +45,11 @@ describe("SNS Blocking Integration", () => {
 
     it("should disable blocking rules when timer is reset", async () => {
       // First start a timer to enable blocking
-      await routes["timer/start"]({ minutes: 25 });
+      await handleEvents("timer/start", { minutes: 25 });
       vi.clearAllMocks();
 
       // Then reset it
-      await routes["timer/reset"]();
+      await handleEvents("timer/reset");
 
       // Verify that declarativeNetRequest.updateDynamicRules was called to remove rules
       expect(
@@ -183,7 +183,7 @@ describe("SNS Blocking Integration", () => {
 
   describe("Timer State Integration", () => {
     it("should enable blocking when work session starts", async () => {
-      await routes["timer/start"]({ minutes: 25 });
+      await handleEvents("timer/start", { minutes: 25 });
 
       const timer = getTimer();
       expect(timer.mode).toBe("running");
@@ -201,11 +201,11 @@ describe("SNS Blocking Integration", () => {
 
     it("should disable blocking when timer is reset", async () => {
       // Start timer first
-      await routes["timer/start"]({ minutes: 25 });
+      await handleEvents("timer/start", { minutes: 25 });
       vi.clearAllMocks();
 
       // Reset timer
-      await routes["timer/reset"]();
+      await handleEvents("timer/reset");
 
       const timer = getTimer();
       expect(timer.mode).toBe("setup");
@@ -228,7 +228,7 @@ describe("SNS Blocking Integration", () => {
       // Simulate work session completion by manually triggering session switch
       timer.sessionElapsed = timer.sessionDuration + 1000; // Exceed session duration
 
-      const result = await routes["timer/update"]();
+      const result = await handleEvents("timer/update");
 
       // Verify the update returns session information
       expect(result).toHaveProperty("mode");
@@ -239,7 +239,7 @@ describe("SNS Blocking Integration", () => {
 
     it("should maintain blocking state during pause and resume", async () => {
       // Start timer (enables blocking)
-      await routes["timer/start"]({ minutes: 25 });
+      await handleEvents("timer/start", { minutes: 25 });
       expect(
         chromeMock.declarativeNetRequest.updateDynamicRules
       ).toHaveBeenCalledTimes(1);
@@ -247,13 +247,13 @@ describe("SNS Blocking Integration", () => {
       vi.clearAllMocks();
 
       // Pause timer (should not change blocking state)
-      await routes["timer/pause"]();
+      await handleEvents("timer/pause");
       expect(
         chromeMock.declarativeNetRequest.updateDynamicRules
       ).not.toHaveBeenCalled();
 
       // Resume timer (should not change blocking state)
-      await routes["timer/resume"]();
+      await handleEvents("timer/resume");
       expect(
         chromeMock.declarativeNetRequest.updateDynamicRules
       ).not.toHaveBeenCalled();
