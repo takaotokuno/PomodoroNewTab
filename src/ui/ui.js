@@ -90,7 +90,7 @@ class UIController {
           throw new Error(result?.error || "Failed to save sound settings");
         }
       } catch (error) {
-        console.error('Error saving sound settings:', error);
+        console.error("Error saving sound settings:", error);
         // Revert checkbox on error
         this.soundToggle.checked = !isEnabled;
       }

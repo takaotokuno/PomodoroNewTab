@@ -25,7 +25,9 @@ vi.mock("@/background/sound-controller.js", () => ({
 }));
 
 // Mock events handleEvents
-const handleEventsMock = vi.fn().mockImplementation(async () => ({ foo: "bar" }));
+const handleEventsMock = vi
+  .fn()
+  .mockImplementation(async () => ({ foo: "bar" }));
 vi.mock("@/background/events.js", () => ({
   handleEvents: handleEventsMock,
 }));

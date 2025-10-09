@@ -106,7 +106,7 @@ function cleanupAudio() {
 chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   if (message.type !== "AUDIO_CONTROL") return;
 
-  (async() => {
+  (async () => {
     try {
       switch (message.action) {
         case "PLAY":

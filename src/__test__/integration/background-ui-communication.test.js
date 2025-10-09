@@ -191,9 +191,9 @@ describe("Background-UI Communication Integration", () => {
       await expect(handleEvents("timer/start", { minutes: 0 })).rejects.toThrow(
         "Invalid minutes"
       );
-      await expect(handleEvents("timer/start", { minutes: -5 })).rejects.toThrow(
-        "Invalid minutes"
-      );
+      await expect(
+        handleEvents("timer/start", { minutes: -5 })
+      ).rejects.toThrow("Invalid minutes");
       await expect(handleEvents("timer/start", {})).rejects.toThrow(
         "Invalid minutes"
       );

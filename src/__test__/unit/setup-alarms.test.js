@@ -131,17 +131,22 @@ describe("SetupAlarms", () => {
 
     test("should handle errors from handleEvents and log them", async () => {
       const { handleEvents } = await import("@/background/events.js");
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
 
       handleEvents.mockRejectedValueOnce(new Error("handleEvents error"));
 
       setupAlarms();
 
       await listener({ name: TICK });
-      
+
       expect(handleEvents).toHaveBeenCalledWith("timer/update");
-      expect(consoleSpy).toHaveBeenCalledWith("Alarm message failed:", expect.any(Error));
-      
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Alarm message failed:",
+        expect.any(Error)
+      );
+
       consoleSpy.mockRestore();
     });
 

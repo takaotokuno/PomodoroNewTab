@@ -159,9 +159,9 @@ describe("Events", () => {
     });
 
     test('should notify "switch" when break session is complete', async () => {
-      fakeTimer.update.mockReturnValue({ 
+      fakeTimer.update.mockReturnValue({
         sessionType: SESSION_TYPES.BREAK,
-        isSessionComplete: true 
+        isSessionComplete: true,
       });
       fakeTimer.currentSessionType = SESSION_TYPES.BREAK;
 
@@ -176,9 +176,9 @@ describe("Events", () => {
     });
 
     test('should throw error when "timer/start" is called with invalid minutes', async () => {
-      await expect(handleEvents("timer/start", { minutes: -1 })).rejects.toThrow(
-        "Invalid minutes"
-      );
+      await expect(
+        handleEvents("timer/start", { minutes: -1 })
+      ).rejects.toThrow("Invalid minutes");
     });
 
     test('should throw error when "timer/start" is called without minutes', async () => {

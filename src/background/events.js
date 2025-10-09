@@ -57,7 +57,7 @@ const events = {
     const timer = getTimer();
     timer.soundEnabled = soundEnabled;
     return { soundEnabled };
-  }
+  },
 };
 
 /**
