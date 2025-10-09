@@ -83,12 +83,22 @@ class UIController {
 
     this.soundToggle.addEventListener("change", async () => {
       const isEnabled = this.soundToggle.checked;
-      this.bgClient.saveSoundSettings(isEnabled);
+
+      try {
+        const result = await this.bgClient.saveSoundSettings(isEnabled);
+        if (!result || !result.success) {
+          throw new Error(result?.error || "Failed to save sound settings");
+        }
+      } catch (error) {
+        console.error('Error saving sound settings:', error);
+        // Revert checkbox on error
+        this.soundToggle.checked = !isEnabled;
+      }
     });
   }
 
   async resetView() {
-    this.bgClient.reset();
+    await this.bgClient.reset();
     this.ticker.stop();
 
     this.mode = TIMER_MODES.SETUP;
@@ -157,7 +167,9 @@ class UIController {
     }
 
     const soundEnabled = state.soundEnabled ?? false;
-    this.soundToggle.checked = soundEnabled;
+    if (this.soundToggle.checked !== soundEnabled) {
+      this.soundToggle.checked = soundEnabled;
+    }
 
     this.updateView();
   }
