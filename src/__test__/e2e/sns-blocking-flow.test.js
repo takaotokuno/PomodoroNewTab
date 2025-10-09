@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
-import { BGClient } from "../../ui/bg-client.js";
-import { initTimer, getTimer } from "../../background/timer-store.js";
-import { handleEvents } from "../../background/events.js";
-import Constants from "../../constants.js";
+import { BGClient } from "@/ui/bg-client.js";
+import { initTimer, getTimer } from "@/background/timer-store.js";
+import { handleEvents } from "@/background/events.js";
+import Constants from "@/constants.js";
 
 const { TIMER_MODES, SESSION_TYPES, DURATIONS } = Constants;
 

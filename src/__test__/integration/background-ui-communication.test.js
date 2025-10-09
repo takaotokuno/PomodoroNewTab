@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
-import { BGClient } from "../../ui/bg-client.js";
+import { BGClient } from "@/ui/bg-client.js";
 
 // Import background modules to test integration
-import { handleEvents } from "../../background/events.js";
-import { initTimer, getTimer } from "../../background/timer-store.js";
+import { handleEvents } from "@/background/events.js";
+import { initTimer, getTimer } from "@/background/timer-store.js";
 
 describe("Background-UI Communication Integration", () => {
   let chromeMock;

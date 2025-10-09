@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
-import { enableBlock, disableBlock } from "../../background/sites-guard.js";
-import { handleEvents } from "../../background/events.js";
-import { initTimer, getTimer } from "../../background/timer-store.js";
+import { enableBlock, disableBlock } from "@/background/sites-guard.js";
+import { handleEvents } from "@/background/events.js";
+import { initTimer, getTimer } from "@/background/timer-store.js";
 
 describe("SNS Blocking Integration", () => {
   let chromeMock;

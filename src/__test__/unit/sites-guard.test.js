@@ -4,7 +4,7 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { enableBlock, disableBlock } from "@/background/sites-guard.js";
 import { setupChromeMock } from "../setup.chrome.js";
-import Constants from "../../constants.js";
+import Constants from "@/constants.js";
 const { BLOCK_SITES } = Constants;
 
 describe("SitesGuard", () => {
