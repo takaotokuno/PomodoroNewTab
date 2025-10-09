@@ -63,7 +63,14 @@ async function sendAudioMessage(action, options = {}) {
     action,
     ...options
   };
-  await chrome.runtime.sendMessage(message);
+  
+  try{
+    const res = await chrome.runtime.sendMessage(message);
+    if (!res?.success) throw new Error(res?.error || "Offscreen error");
+    return res;
+  } catch(e) {
+    throw new Error("Failed to send audio message: " + e.message);
+  }
 }
 
 export async function setupSound() {

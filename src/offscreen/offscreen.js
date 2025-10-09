@@ -103,35 +103,41 @@ function cleanupAudio() {
 /**
  * Background serviceからのメッセージを処理
  */
-chrome.runtime.onMessage.addListener(async (message) => {
+chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   if (message.type !== "AUDIO_CONTROL") return;
 
-  try {
-    switch (message.action) {
-      case "PLAY":
-        await loadAudio(
-          message.soundFile || "resources/nature-sound.mp3",
-          message.volume || 0.3,
-          message.loop !== false
-        );
-        await playAudio();
-        return;
+  (async() => {
+    try {
+      switch (message.action) {
+        case "PLAY":
+          await loadAudio(
+            message.soundFile || "resources/nature-sound.mp3",
+            message.volume || 0.3,
+            message.loop !== false
+          );
+          await playAudio();
+          sendResponse({ success: true });
+          break;
 
-      case "STOP":
-        stopAudio();
-        return;
+        case "STOP":
+          stopAudio();
+          sendResponse({ success: true });
+          break;
 
-      case "CLEANUP":
-        cleanupAudio();
-        return;
+        case "CLEANUP":
+          cleanupAudio();
+          sendResponse({ success: true });
+          break;
 
-      default:
-        return;
+        default:
+          return;
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: error.message });
+      return;
     }
-  } catch (error) {
-    console.error("Audio error:", error.message);
-    return;
-  }
+  })();
+  return true;
 });
 
 // ページがアンロードされる時のクリーンアップ
