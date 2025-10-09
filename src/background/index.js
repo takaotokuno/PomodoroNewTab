@@ -8,7 +8,7 @@
 
 import { initTimer, saveSnapshot } from "./timer-store.js";
 import { setupAlarms } from "./setup-alarms.js";
-import { setupSound } from "./sound-controller.js";
+import { setupSound, handleSound } from "./sound-controller.js";
 import { routes } from "./events.js";
 
 // Ensure timer is restored on extension install and browser startup
@@ -30,6 +30,7 @@ chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
       if (!fn) return sendResponse({ ok: false, error: "unknown route" });
       await initTimer();
       const data = await fn(msg);
+      await handleSound();
       await saveSnapshot();
       sendResponse({ success: true, ...data });
     } catch (e) {

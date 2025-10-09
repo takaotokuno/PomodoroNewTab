@@ -2,7 +2,6 @@ import { getTimer } from "./timer-store.js";
 import { startTick, stopTick } from "./setup-alarms.js";
 import { notify } from "./notification.js";
 import { enableBlock, disableBlock } from "./sites-guard.js";
-import { handleSound } from "./sound-controller.js";
 import Constants from "../constants.js";
 
 /**
@@ -16,23 +15,19 @@ export const routes = {
     getTimer().start(minutes);
     await enableBlock();
     await startTick();
-    await handleSound();
   },
   "timer/pause": async () => {
     getTimer().pause();
     await stopTick();
-    await handleSound();
   },
   "timer/resume": async () => {
     getTimer().resume();
     await startTick();
-    await handleSound();
   },
   "timer/reset": async () => {
     getTimer().reset();
     await disableBlock();
     await stopTick();
-    await handleSound();
   },
   "timer/update": async () => {
     const timer = getTimer();
@@ -50,7 +45,7 @@ export const routes = {
     const soundEnabled = Boolean(isEnabled);
     const timer = getTimer();
     timer.soundEnabled = soundEnabled;
-    await handleSound();
+    return { soundEnabled };
   }
 };
 
@@ -73,7 +68,6 @@ export async function handleEvents(res) {
 
     await disableBlock();
     await stopTick();
-    await handleSound();
   } else if (res.isSessionComplete) {
     const isWork = res.sessionType === Constants.SESSION_TYPES.WORK;
     await notify({
@@ -89,7 +83,5 @@ export async function handleEvents(res) {
     } else {
       await disableBlock();
     }
-
-    await handleSound();
   }
 }
