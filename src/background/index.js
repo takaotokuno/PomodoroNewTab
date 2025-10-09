@@ -6,10 +6,10 @@
  * → Index = thin entry & routing hub, modules = grouped by domain responsibility
  */
 
-import { initTimer, saveSnapshot } from "./timer-store.js";
+import { initTimer } from "./timer-store.js";
 import { setupAlarms } from "./setup-alarms.js";
-import { setupSound, handleSound } from "./sound-controller.js";
-import { routes } from "./events.js";
+import { setupSound } from "./sound-controller.js";
+import { handleEvents } from "./events.js";
 
 // Ensure timer is restored on extension install and browser startup
 chrome.runtime.onInstalled.addListener(initTimer);
@@ -21,17 +21,12 @@ setupSound();
 
 /**
  * Global message handler for extension runtime.
- * Uses routes table to dispatch logic based on msg.type.
+ * Uses events table to dispatch logic based on msg.type.
  */
 chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
   (async () => {
     try {
-      const fn = routes[msg?.type];
-      if (!fn) return sendResponse({ ok: false, error: "unknown route" });
-      await initTimer();
-      const data = await fn(msg);
-      await handleSound();
-      await saveSnapshot();
+      const data = await handleEvents(msg.type, msg);
       sendResponse({ success: true, ...data });
     } catch (e) {
       sendResponse({ success: false, error: String(e?.message || e) });

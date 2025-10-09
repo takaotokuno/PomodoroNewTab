@@ -1,14 +1,25 @@
-import { getTimer } from "./timer-store.js";
+import { initTimer, getTimer, saveSnapshot } from "./timer-store.js";
 import { startTick, stopTick } from "./setup-alarms.js";
 import { notify } from "./notification.js";
 import { enableBlock, disableBlock } from "./sites-guard.js";
+import { handleSound } from "./sound-controller.js";
 import Constants from "../constants.js";
 
+export async function handleEvents(type, payload = {}) {
+  const fn = events[type];
+  if (!fn) throw new Error("Unknown event type: " + type);
+  await initTimer();
+  const data = await fn(payload);
+  await handleSound();
+  await saveSnapshot();
+  return data;
+}
+
 /**
- * Routes for handling messages from UI/content scripts.
+ * Events for handling messages from UI/content scripts.
  * Each key is a message type, mapped to a function that mutates or queries TimerState.
  */
-export const routes = {
+const events = {
   "timer/start": async ({ minutes }) => {
     if (!minutes || minutes < 0) throw new Error("Invalid minutes");
 
@@ -32,7 +43,7 @@ export const routes = {
   "timer/update": async () => {
     const timer = getTimer();
     const res = timer.update();
-    await handleEvents(res);
+    await handleSwitch(res);
     return {
       mode: timer.mode,
       totalRemaining: timer.getTotalRemaining(),
@@ -56,7 +67,7 @@ export const routes = {
  * - Show "switch" notification when a session ends,
  *   using currentSessionType after the switch.
  */
-export async function handleEvents(res) {
+async function handleSwitch(res) {
   if (!res) return;
 
   if (res.mode === Constants.TIMER_MODES.COMPLETED) {

@@ -1,4 +1,3 @@
-import { getTimer, saveSnapshot } from "./timer-store.js";
 import { handleEvents } from "./events.js";
 
 const TICK = "POMODORO_TICK";
@@ -14,13 +13,11 @@ export function setupAlarms() {
    */
   chrome.alarms.onAlarm.addListener(async (a) => {
     if (a.name !== TICK) return;
-
-    const timer = getTimer();
-    if (!timer) return;
-    const res = timer.update();
-
-    await handleEvents(res);
-    await saveSnapshot();
+    try {
+      await handleEvents("timer/update");
+    } catch (e) {
+      console.error("Alarm message failed:", e);
+    }
   });
 }
 
