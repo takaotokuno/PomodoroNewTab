@@ -102,7 +102,22 @@ async function _stopTick() {
  */
 const events = {
   "timer/start": async ({ minutes }, timer) => {
-    if (!minutes || minutes < 0) throw new Error("Invalid minutes");
+    if (minutes === undefined || minutes === null) {
+      throw new Error("Invalid minutes: parameter is required");
+    }
+    if (typeof minutes !== "number" || isNaN(minutes)) {
+      throw new Error("Invalid minutes: must be a number");
+    }
+    if (minutes < Constants.DURATIONS.MIN_TOTAL_MINUTES) {
+      throw new Error(
+        `Invalid minutes: must be at least ${Constants.DURATIONS.MIN_TOTAL_MINUTES}`
+      );
+    }
+    if (minutes > Constants.DURATIONS.MAX_TOTAL_MINUTES) {
+      throw new Error(
+        `Invalid minutes: must be at most ${Constants.DURATIONS.MAX_TOTAL_MINUTES}`
+      );
+    }
 
     timer.start(minutes);
     const blockRes = await _enebleBlock();
@@ -145,6 +160,10 @@ const events = {
     };
   },
   "sound/save": async ({ isEnabled }, timer) => {
+    // 防御的プログラミング: isEnabled パラメータの検証
+    if (isEnabled === undefined || isEnabled === null) {
+      throw new Error("Invalid isEnabled: parameter is required");
+    }
     const soundEnabled = Boolean(isEnabled);
     timer.soundEnabled = soundEnabled;
     return { soundEnabled: timer.soundEnabled };

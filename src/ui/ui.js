@@ -49,24 +49,48 @@ class UIController {
     };
   }
 
+  validateMinutes(value) {
+    const minutes = parseInt(value, 10);
+    if (isNaN(minutes)) {
+      return { valid: false, error: "数値を入力してください" };
+    }
+    if (minutes < Constants.DURATIONS.MIN_TOTAL_MINUTES) {
+      return {
+        valid: false,
+        error: `${Constants.DURATIONS.MIN_TOTAL_MINUTES}分以上を入力してください`,
+      };
+    }
+    if (minutes > Constants.DURATIONS.MAX_TOTAL_MINUTES) {
+      return {
+        valid: false,
+        error: `${Constants.DURATIONS.MAX_TOTAL_MINUTES}分以下を入力してください`,
+      };
+    }
+    return { valid: true };
+  }
+
   attachEventListeners() {
     this.startButton.addEventListener(
       "click",
       this.withProcessingLock(async () => {
         const minutes = parseInt(this.timerDurationInput.value, 10);
-        if (!isNaN(minutes) && minutes >= 5 && minutes <= 300) {
-          this.bgClient.start(minutes);
-          this.ticker.start(minutes);
+        const validation = this.validateMinutes(this.timerDurationInput.value);
 
-          this.mode = TIMER_MODES.RUNNING;
-
-          this.timerDurationError.style.display = "none";
-          this.updateView();
-
-          this.setSyncInterval();
-        } else {
+        if (!validation.valid) {
+          this.timerDurationError.textContent = validation.error;
           this.timerDurationError.style.display = "block";
+          return;
         }
+
+        this.bgClient.start(minutes);
+        this.ticker.start(minutes);
+
+        this.mode = TIMER_MODES.RUNNING;
+
+        this.timerDurationError.style.display = "none";
+        this.updateView();
+
+        this.setSyncInterval();
       })
     );
 

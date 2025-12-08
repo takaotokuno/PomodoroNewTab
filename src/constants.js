@@ -7,7 +7,7 @@ export default class Constants {
     WORK_SESSION: 25 * 60 * 1000, // 25 minutes
     BREAK_SESSION: 5 * 60 * 1000, // 5 minutes
     DEFAULT_TOTAL_MINUTES: 60,
-    MIN_TOTAL_MINUTES: 15,
+    MIN_TOTAL_MINUTES: 5,
     MAX_TOTAL_MINUTES: 300,
   };
 

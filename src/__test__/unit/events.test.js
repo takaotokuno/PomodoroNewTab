@@ -176,16 +176,34 @@ describe("Events", () => {
       );
     });
 
-    test('should throw error when "timer/start" is called with invalid minutes', async () => {
+    test('should throw error when "timer/start" is called with minutes below minimum', async () => {
+      await expect(handleEvents("timer/start", { minutes: 4 })).rejects.toThrow(
+        "Invalid minutes: must be at least 5"
+      );
+    });
+
+    test('should throw error when "timer/start" is called with minutes above maximum', async () => {
       await expect(
-        handleEvents("timer/start", { minutes: -1 })
-      ).rejects.toThrow("Invalid minutes");
+        handleEvents("timer/start", { minutes: 301 })
+      ).rejects.toThrow("Invalid minutes: must be at most 300");
     });
 
     test('should throw error when "timer/start" is called without minutes', async () => {
       await expect(handleEvents("timer/start", {})).rejects.toThrow(
-        "Invalid minutes"
+        "Invalid minutes: parameter is required"
       );
+    });
+
+    test('should throw error when "timer/start" is called with non-number minutes', async () => {
+      await expect(
+        handleEvents("timer/start", { minutes: "25" })
+      ).rejects.toThrow("Invalid minutes: must be a number");
+    });
+
+    test('should throw error when "timer/start" is called with NaN', async () => {
+      await expect(
+        handleEvents("timer/start", { minutes: NaN })
+      ).rejects.toThrow("Invalid minutes: must be a number");
     });
 
     test('should enable block and start tick when "timer/start" is invoked', async () => {
@@ -337,11 +355,10 @@ describe("Events", () => {
       expect(result.soundEnabled).toBe(false);
     });
 
-    test('should handle undefined isEnabled in "sound/save"', async () => {
-      const result = await handleEvents("sound/save", {});
-
-      expect(fakeTimer.soundEnabled).toBe(false);
-      expect(result.soundEnabled).toBe(false);
+    test('should throw error when "sound/save" is called without isEnabled', async () => {
+      await expect(handleEvents("sound/save", {})).rejects.toThrow(
+        "Invalid isEnabled: parameter is required"
+      );
     });
   });
 });
