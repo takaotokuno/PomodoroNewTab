@@ -170,7 +170,10 @@ describe("TimerStore", () => {
       await initTimer();
       mockTimerInstance.toSnapshot.mockReturnValue({ mode: TIMER_MODES.SETUP });
 
-      await expect(saveSnapshot()).resolves.toEqual({ success: false, error: "Storage write error" });
+      await expect(saveSnapshot()).resolves.toEqual({
+        success: false,
+        error: "Storage write error",
+      });
     });
   });
 });

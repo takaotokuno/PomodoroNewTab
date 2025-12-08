@@ -66,10 +66,10 @@ describe("E2E: SNS Blocking User Experience", () => {
 
     chromeMock.runtime.sendMessage.mockImplementation(async (msg) => {
       // For non-event messages (like AUDIO_CONTROL), use default mock behavior
-      if (!msg.type || !msg.type.includes('/')) {
+      if (!msg.type || !msg.type.includes("/")) {
         return { success: true };
       }
-      
+
       try {
         let data = await handleEvents(msg.type, msg);
         if (!data) data = { success: true };

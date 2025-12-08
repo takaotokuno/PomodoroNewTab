@@ -35,10 +35,10 @@ describe("E2E: Complete User Timer Workflow", () => {
     // Mock successful background responses for all timer operations
     chromeMock.runtime.sendMessage.mockImplementation(async (msg) => {
       // For non-event messages (like AUDIO_CONTROL), use default mock behavior
-      if (!msg.type || !msg.type.includes('/')) {
+      if (!msg.type || !msg.type.includes("/")) {
         return { success: true };
       }
-      
+
       try {
         const data = await handleEvents(msg?.type, msg);
         return data;
@@ -359,13 +359,13 @@ describe("E2E: Complete User Timer Workflow", () => {
       vi.setSystemTime(workCompleteTime);
 
       const updateResult = await bgClient.update();
-      
+
       // Result has warning due to notification failure, but timer state updated correctly
       expect(updateResult.success).toBe(false);
       expect(updateResult.severity).toBe("warning");
       expect(updateResult.warnings).toBeDefined();
       expect(updateResult.sessionType).toBe(SESSION_TYPES.BREAK);
-      
+
       // Timer state should have switched to break despite notification failure
       expect(timer.sessionType).toBe(SESSION_TYPES.BREAK);
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
@@ -378,10 +378,12 @@ describe("E2E: Complete User Timer Workflow", () => {
 
       // Start timer - should enable blocking
       await bgClient.start(totalMinutes);
-      
+
       // Verify declarativeNetRequest rules were updated
-      expect(chromeMock.declarativeNetRequest.updateDynamicRules).toHaveBeenCalled();
-      
+      expect(
+        chromeMock.declarativeNetRequest.updateDynamicRules
+      ).toHaveBeenCalled();
+
       const timer = getTimer();
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(timer.sessionType).toBe(SESSION_TYPES.WORK);
@@ -392,7 +394,7 @@ describe("E2E: Complete User Timer Workflow", () => {
 
       await bgClient.start(totalMinutes);
       const timer = getTimer();
-      
+
       chromeMock.declarativeNetRequest.updateDynamicRules.mockClear();
 
       // Complete work session to trigger break
@@ -402,7 +404,9 @@ describe("E2E: Complete User Timer Workflow", () => {
       await bgClient.update();
 
       // Verify blocking was disabled for break (includes both addRules and removeRuleIds)
-      expect(chromeMock.declarativeNetRequest.updateDynamicRules).toHaveBeenCalledWith({
+      expect(
+        chromeMock.declarativeNetRequest.updateDynamicRules
+      ).toHaveBeenCalledWith({
         addRules: [],
         removeRuleIds: expect.any(Array),
       });
@@ -418,7 +422,9 @@ describe("E2E: Complete User Timer Workflow", () => {
       await bgClient.reset();
 
       // Verify blocking was disabled (includes both addRules and removeRuleIds)
-      expect(chromeMock.declarativeNetRequest.updateDynamicRules).toHaveBeenCalledWith({
+      expect(
+        chromeMock.declarativeNetRequest.updateDynamicRules
+      ).toHaveBeenCalledWith({
         addRules: [],
         removeRuleIds: expect.any(Array),
       });
@@ -439,7 +445,7 @@ describe("E2E: Complete User Timer Workflow", () => {
 
       await bgClient.update();
       timer = getTimer();
-      
+
       // Verify timer state is consistent
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(timer.totalDuration).toBe(totalMinutes * 60 * 1000);

@@ -3,7 +3,12 @@ import { startTick, stopTick } from "./setup-alarms.js";
 import { notify } from "./notification.js";
 import { enableBlock, disableBlock } from "./sites-guard.js";
 import { handleSound } from "./sound-controller.js";
-import { alertError, fatalError, normalizeResponse, isFatal } from "./result.js";
+import {
+  alertError,
+  fatalError,
+  normalizeResponse,
+  isFatal,
+} from "./result.js";
 import Constants from "../constants.js";
 
 /**
@@ -19,17 +24,26 @@ export async function handleEvents(type, payload = {}) {
     return fatalError(new Error(`Unknown event type: ${type}`));
   }
 
-  const initRes = await _safeStep(() => initTimer(), { name: "initTimer", fatalOnError: true });
+  const initRes = await _safeStep(() => initTimer(), {
+    name: "initTimer",
+    fatalOnError: true,
+  });
   if (isFatal(initRes)) return initRes;
 
   const timer = getTimer();
   const mainRes = normalizeResponse(await fn(payload, timer));
   if (isFatal(mainRes)) return mainRes;
 
-  const soundRes = await _safeStep(() => handleSound(), { name: "handleSound", fatalOnError: false });
+  const soundRes = await _safeStep(() => handleSound(), {
+    name: "handleSound",
+    fatalOnError: false,
+  });
   if (isFatal(soundRes)) return soundRes;
 
-  const saveRes = await _safeStep(() => saveSnapshot(), { name: "saveSnapshot", fatalOnError: false });
+  const saveRes = await _safeStep(() => saveSnapshot(), {
+    name: "saveSnapshot",
+    fatalOnError: false,
+  });
   if (isFatal(saveRes)) return saveRes;
 
   return _mergeResults(initRes, mainRes, soundRes, saveRes);
@@ -43,7 +57,7 @@ export async function handleEvents(type, payload = {}) {
  * @param {boolean} options.fatalOnError - Whether to treat errors as fatal
  * @returns {Promise<Object>} Normalized result object
  */
-async function _safeStep(stepFn, {name, fatalOnError}) {
+async function _safeStep(stepFn, { name, fatalOnError }) {
   try {
     const res = await stepFn();
     return normalizeResponse(res);
@@ -55,19 +69,31 @@ async function _safeStep(stepFn, {name, fatalOnError}) {
 }
 
 async function _enebleBlock() {
-  return await _safeStep(() => enableBlock(), { name: "enableBlock", fatalOnError: true });
+  return await _safeStep(() => enableBlock(), {
+    name: "enableBlock",
+    fatalOnError: true,
+  });
 }
 
 async function _disableBlock() {
-  return await _safeStep(() => disableBlock(), { name: "disableBlock", fatalOnError: true });
+  return await _safeStep(() => disableBlock(), {
+    name: "disableBlock",
+    fatalOnError: true,
+  });
 }
 
 async function _startTick() {
-  return await _safeStep(() => startTick(), { name: "startTick", fatalOnError: true });
+  return await _safeStep(() => startTick(), {
+    name: "startTick",
+    fatalOnError: true,
+  });
 }
 
 async function _stopTick() {
-  return await _safeStep(() => stopTick(), { name: "stopTick", fatalOnError: true });
+  return await _safeStep(() => stopTick(), {
+    name: "stopTick",
+    fatalOnError: true,
+  });
 }
 
 /**
@@ -81,10 +107,10 @@ const events = {
     timer.start(minutes);
     const blockRes = await _enebleBlock();
     if (isFatal(blockRes)) return blockRes;
-    
+
     const alarmsRes = await _startTick();
     if (isFatal(alarmsRes)) return alarmsRes;
-    
+
     return _mergeResults(blockRes, alarmsRes);
   },
   "timer/pause": async (_, timer) => {
@@ -103,7 +129,7 @@ const events = {
     if (isFatal(blockRes)) return blockRes;
     const alarmsRes = await _stopTick();
     if (isFatal(alarmsRes)) return alarmsRes;
-    
+
     return _mergeResults(blockRes, alarmsRes);
   },
   "timer/update": async (_, timer) => {
@@ -137,11 +163,12 @@ async function _handleSwitch(res) {
 
   if (res.mode === Constants.TIMER_MODES.COMPLETED) {
     const notifyRes = await _safeStep(
-      () => notify({
-        id: "complete" + Date.now(),
-        title: "ポモドーロ完了",
-        message: "お疲れ様！また頑張ろう",
-      }),
+      () =>
+        notify({
+          id: "complete" + Date.now(),
+          title: "ポモドーロ完了",
+          message: "お疲れ様！また頑張ろう",
+        }),
       { name: "notify", fatalOnError: false }
     );
 
@@ -152,17 +179,17 @@ async function _handleSwitch(res) {
     if (isFatal(alarmsRes)) return alarmsRes;
 
     return _mergeResults(notifyRes, blockRes, alarmsRes);
-
   } else if (res.isSessionComplete) {
     const isWork = res.sessionType === Constants.SESSION_TYPES.WORK;
     const notifyRes = await _safeStep(
-      () => notify({
-        id: "switch" + Date.now(),
-        title: isWork ? "作業開始！" : "休憩開始",
-        message: isWork
-          ? "SNSをブロックしたよ。作業に集中しよう"
-          : "ブロックを解除したよ。肩の力を抜こう",
-      }),
+      () =>
+        notify({
+          id: "switch" + Date.now(),
+          title: isWork ? "作業開始！" : "休憩開始",
+          message: isWork
+            ? "SNSをブロックしたよ。作業に集中しよう"
+            : "ブロックを解除したよ。肩の力を抜こう",
+        }),
       { name: "notify", fatalOnError: false }
     );
 

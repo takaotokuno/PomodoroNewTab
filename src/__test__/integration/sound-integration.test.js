@@ -284,9 +284,9 @@ describe("Sound Integration - Core Functionality", () => {
     });
 
     test("should skip offscreen creation if already exists", async () => {
-      chromeMock.runtime.getContexts = vi.fn().mockResolvedValue([
-        { contextType: "OFFSCREEN_DOCUMENT" },
-      ]);
+      chromeMock.runtime.getContexts = vi
+        .fn()
+        .mockResolvedValue([{ contextType: "OFFSCREEN_DOCUMENT" }]);
 
       const { setupSound } = await import("@/background/sound-controller.js");
       await setupSound();
@@ -353,12 +353,16 @@ describe("Sound Integration - Core Functionality", () => {
 
       const { playAudio } = await import("@/background/sound-controller.js");
 
-      await expect(playAudio()).rejects.toThrow("Failed to send audio message: Playback failed");
+      await expect(playAudio()).rejects.toThrow(
+        "Failed to send audio message: Playback failed"
+      );
 
       // Second attempt should try again (isPlaying should be reset)
       vi.resetModules();
       chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
-      const { playAudio: playAudio2 } = await import("@/background/sound-controller.js");
+      const { playAudio: playAudio2 } = await import(
+        "@/background/sound-controller.js"
+      );
       await expect(playAudio2()).resolves.not.toThrow();
     });
 
@@ -370,12 +374,16 @@ describe("Sound Integration - Core Functionality", () => {
 
       const { stopAudio } = await import("@/background/sound-controller.js");
 
-      await expect(stopAudio()).rejects.toThrow("Failed to send audio message: Stop failed");
+      await expect(stopAudio()).rejects.toThrow(
+        "Failed to send audio message: Stop failed"
+      );
 
       // isPlaying should be reset even on error
       vi.resetModules();
       chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
-      const { stopAudio: stopAudio2 } = await import("@/background/sound-controller.js");
+      const { stopAudio: stopAudio2 } = await import(
+        "@/background/sound-controller.js"
+      );
       await expect(stopAudio2()).resolves.not.toThrow();
     });
   });

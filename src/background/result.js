@@ -6,7 +6,7 @@ export function alertError(err, extra = {}) {
     severity: Constants.SEVERITY_LEVELS.WARNING,
     error: String(err?.message || err),
     ...extra,
-  }
+  };
 }
 
 export function fatalError(err, extra = {}) {
@@ -15,11 +15,13 @@ export function fatalError(err, extra = {}) {
     severity: Constants.SEVERITY_LEVELS.FATAL,
     error: String(err?.message || err),
     ...extra,
-  }
+  };
 }
 
 export function isFatal(res) {
-  return res?.success === false && res?.severity === Constants.SEVERITY_LEVELS.FATAL;
+  return (
+    res?.success === false && res?.severity === Constants.SEVERITY_LEVELS.FATAL
+  );
 }
 
 export function normalizeResponse(res) {

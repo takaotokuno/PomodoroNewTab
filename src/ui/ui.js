@@ -7,6 +7,7 @@ class UIController {
   constructor() {
     this.mode = TIMER_MODES.SETUP;
     this.syncInterval = null;
+    this.isProcessing = false;
 
     this.ticker = new TimerTicker(this);
     this.bgClient = new BGClient();
@@ -36,65 +37,92 @@ class UIController {
     this.syncFromBG();
   }
 
-  attachEventListeners() {
-    this.startButton.addEventListener("click", async () => {
-      const minutes = parseInt(this.timerDurationInput.value, 10);
-      if (!isNaN(minutes) && minutes >= 5 && minutes <= 300) {
-        this.bgClient.start(minutes);
-        this.ticker.start(minutes);
-
-        this.mode = TIMER_MODES.RUNNING;
-
-        this.timerDurationError.style.display = "none";
-        this.updateView();
-
-        this.setSyncInterval();
-      } else {
-        this.timerDurationError.style.display = "block";
-      }
-    });
-
-    this.pauseButton.addEventListener("click", async () => {
-      if (this.mode === TIMER_MODES.RUNNING) {
-        this.bgClient.pause();
-        this.ticker.stop();
-
-        this.mode = TIMER_MODES.PAUSED;
-
-        this.clearSyncInterval();
-      } else if (this.mode === TIMER_MODES.PAUSED) {
-        this.bgClient.resume();
-        this.ticker.resume();
-
-        this.mode = TIMER_MODES.RUNNING;
-
-        this.setSyncInterval();
-      }
-      this.updateView();
-    });
-
-    this.resetButton.addEventListener("click", async () => {
-      await this.resetView();
-    });
-
-    this.newSessionButton.addEventListener("click", async () => {
-      await this.resetView();
-    });
-
-    this.soundToggle.addEventListener("change", async () => {
-      const isEnabled = this.soundToggle.checked;
-
+  withProcessingLock(handler) {
+    return async (...args) => {
+      if (this.isProcessing) return;
+      this.isProcessing = true;
       try {
-        const result = await this.bgClient.saveSoundSettings(isEnabled);
-        if (!result || !result.success) {
-          throw new Error(result?.error || "Failed to save sound settings");
-        }
-      } catch (error) {
-        console.error("Error saving sound settings:", error);
-        // Revert checkbox on error
-        this.soundToggle.checked = !isEnabled;
+        await handler(...args);
+      } finally {
+        this.isProcessing = false;
       }
-    });
+    };
+  }
+
+  attachEventListeners() {
+    this.startButton.addEventListener(
+      "click",
+      this.withProcessingLock(async () => {
+        const minutes = parseInt(this.timerDurationInput.value, 10);
+        if (!isNaN(minutes) && minutes >= 5 && minutes <= 300) {
+          this.bgClient.start(minutes);
+          this.ticker.start(minutes);
+
+          this.mode = TIMER_MODES.RUNNING;
+
+          this.timerDurationError.style.display = "none";
+          this.updateView();
+
+          this.setSyncInterval();
+        } else {
+          this.timerDurationError.style.display = "block";
+        }
+      })
+    );
+
+    this.pauseButton.addEventListener(
+      "click",
+      this.withProcessingLock(async () => {
+        if (this.mode === TIMER_MODES.RUNNING) {
+          this.bgClient.pause();
+          this.ticker.stop();
+
+          this.mode = TIMER_MODES.PAUSED;
+
+          this.clearSyncInterval();
+        } else if (this.mode === TIMER_MODES.PAUSED) {
+          this.bgClient.resume();
+          this.ticker.resume();
+
+          this.mode = TIMER_MODES.RUNNING;
+
+          this.setSyncInterval();
+        }
+        this.updateView();
+      })
+    );
+
+    this.resetButton.addEventListener(
+      "click",
+      this.withProcessingLock(async () => {
+        await this.resetView();
+      })
+    );
+
+    this.newSessionButton.addEventListener(
+      "click",
+      this.withProcessingLock(async () => {
+        await this.resetView();
+      })
+    );
+
+    this.soundToggle.addEventListener(
+      "change",
+      this.withProcessingLock(async () => {
+        const isEnabled = this.soundToggle.checked;
+
+        try {
+          const result = await this.bgClient.saveSoundSettings(isEnabled);
+          if (!result || !result.success) {
+            throw new Error(result?.error || "Failed to save sound settings");
+          }
+        } catch (error) {
+          console.error("Error saving sound settings:", error);
+          // Revert checkbox on error
+          this.soundToggle.checked = !isEnabled;
+        }
+      })
+    );
   }
 
   async resetView() {

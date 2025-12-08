@@ -131,6 +131,4 @@ describe("Sound End-to-End Tests", () => {
       expect(timer.soundEnabled).toBe(true);
     });
   });
-
-
 });

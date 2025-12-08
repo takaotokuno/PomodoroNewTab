@@ -26,7 +26,11 @@ export function startTick() {
   try {
     chrome.alarms.create(TICK, { periodInMinutes: 1 });
   } catch (e) {
-    return { success: false, severity: "fatal", error: `Failed to create alarm: ${e?.message || e}` };
+    return {
+      success: false,
+      severity: "fatal",
+      error: `Failed to create alarm: ${e?.message || e}`,
+    };
   }
 }
 
@@ -34,6 +38,10 @@ export async function stopTick() {
   try {
     await chrome.alarms.clear(TICK);
   } catch (e) {
-    return { success: false, severity: "fatal", error: `Failed to clear alarm: ${e?.message || e}` };
+    return {
+      success: false,
+      severity: "fatal",
+      error: `Failed to clear alarm: ${e?.message || e}`,
+    };
   }
 }

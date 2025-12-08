@@ -28,7 +28,6 @@ chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
     try {
       let data = await handleEvents(msg.type, msg);
       sendResponse(data);
-
     } catch (e) {
       sendResponse({
         success: false,

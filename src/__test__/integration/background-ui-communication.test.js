@@ -21,7 +21,6 @@ describe("Background-UI Communication Integration", () => {
   });
 
   describe("Message Passing", () => {
-
     it("should handle timer/update message correctly", async () => {
       // Mock chrome.runtime.sendMessage to simulate background response
       chromeMock.runtime.sendMessage.mockResolvedValue({
