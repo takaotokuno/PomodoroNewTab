@@ -120,6 +120,7 @@ describe("Events", () => {
 
       expect(fakeTimer.update).toHaveBeenCalled();
       expect(result).toEqual({
+        success: true,
         mode: "start",
         totalRemaining: MOCK_TOTAL_REMAINING,
         sessionType: "work",
@@ -306,6 +307,41 @@ describe("Events", () => {
       expect(mockEnableBlock).not.toHaveBeenCalled();
       expect(mockDisableBlock).not.toHaveBeenCalled();
       expect(mockStopTick).not.toHaveBeenCalled();
+    });
+
+    test('should save sound settings when "sound/save" is invoked with true', async () => {
+      const result = await handleEvents("sound/save", { isEnabled: true });
+
+      expect(fakeTimer.soundEnabled).toBe(true);
+      expect(result.soundEnabled).toBe(true);
+    });
+
+    test('should save sound settings when "sound/save" is invoked with false', async () => {
+      const result = await handleEvents("sound/save", { isEnabled: false });
+
+      expect(fakeTimer.soundEnabled).toBe(false);
+      expect(result.soundEnabled).toBe(false);
+    });
+
+    test('should convert truthy values to boolean in "sound/save"', async () => {
+      const result = await handleEvents("sound/save", { isEnabled: "yes" });
+
+      expect(fakeTimer.soundEnabled).toBe(true);
+      expect(result.soundEnabled).toBe(true);
+    });
+
+    test('should convert falsy values to boolean in "sound/save"', async () => {
+      const result = await handleEvents("sound/save", { isEnabled: 0 });
+
+      expect(fakeTimer.soundEnabled).toBe(false);
+      expect(result.soundEnabled).toBe(false);
+    });
+
+    test('should handle undefined isEnabled in "sound/save"', async () => {
+      const result = await handleEvents("sound/save", {});
+
+      expect(fakeTimer.soundEnabled).toBe(false);
+      expect(result.soundEnabled).toBe(false);
     });
   });
 });

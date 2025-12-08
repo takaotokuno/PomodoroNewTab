@@ -183,7 +183,11 @@ describe("SetupAlarms", () => {
         throw new Error("Alarm creation failed");
       });
 
-      expect(() => startTick()).toThrow("Alarm creation failed");
+      expect(startTick()).toEqual({
+        success: false,
+        severity: "fatal",
+        error: "Failed to create alarm: Alarm creation failed",
+      });
     });
   });
 
@@ -199,7 +203,11 @@ describe("SetupAlarms", () => {
         throw new Error("Alarm clear failed");
       });
 
-      expect(() => stopTick()).toThrow("Alarm clear failed");
+      expect(stopTick()).resolves.toEqual({
+        success: false,
+        severity: "fatal",
+        error: "Failed to clear alarm: Alarm clear failed",
+      });
     });
   });
 });

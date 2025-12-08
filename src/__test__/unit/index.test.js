@@ -84,7 +84,7 @@ describe("BackgroundIndex", () => {
       expect(handleEventsMock).toHaveBeenCalledWith("timer/start", {
         type: "timer/start",
       });
-      expect(payload).toEqual({ success: true, foo: "bar" });
+      expect(payload).toEqual({ foo: "bar" });
     });
 
     test("should respond with error for unknown route", async () => {
@@ -100,6 +100,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: "Unknown event type: unknown/type",
       });
     });
@@ -118,6 +119,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: errMsg,
       });
     });
@@ -131,6 +133,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: "Cannot read properties of null (reading 'type')",
       });
     });
@@ -144,6 +147,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: "Cannot read properties of undefined (reading 'type')",
       });
     });
@@ -161,6 +165,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: "Unknown event type: null",
       });
     });
@@ -178,6 +183,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: "Unknown event type: undefined",
       });
     });
@@ -196,6 +202,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: "[object Object]",
       });
     });
@@ -214,6 +221,7 @@ describe("BackgroundIndex", () => {
 
       expect(payload).toEqual({
         success: false,
+        severity: "fatal",
         error: errorString,
       });
     });

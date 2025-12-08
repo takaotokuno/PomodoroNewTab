@@ -26,10 +26,15 @@ setupSound();
 chrome.runtime.onMessage.addListener((msg, _, sendResponse) => {
   (async () => {
     try {
-      const data = await handleEvents(msg.type, msg);
-      sendResponse({ success: true, ...data });
+      let data = await handleEvents(msg.type, msg);
+      sendResponse(data);
+
     } catch (e) {
-      sendResponse({ success: false, error: String(e?.message || e) });
+      sendResponse({
+        success: false,
+        severity: "fatal",
+        error: String(e?.message || e),
+      });
     }
   })();
   return true;

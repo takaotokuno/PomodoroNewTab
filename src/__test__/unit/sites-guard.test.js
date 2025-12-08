@@ -7,6 +7,10 @@ import { setupChromeMock } from "../setup.chrome.js";
 import Constants from "@/constants.js";
 const { BLOCK_SITES } = Constants;
 
+vi.mock("@/background/timer-store.js", () => ({
+  getTimer: vi.fn(() => ({ reset: vi.fn() })),
+}));
+
 describe("SitesGuard", () => {
   let chromeMock;
 
@@ -142,7 +146,11 @@ describe("SitesGuard", () => {
         new Error("Tab already closed")
       );
 
-      await expect(enableBlock()).resolves.not.toThrow();
+      await expect(enableBlock()).resolves.toEqual({
+        success: false,
+        severity: "warning",
+        error: "Failed to process 2 out of 2 SNS tabs",
+      });
 
       expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(1);
       expect(chromeMock.tabs.remove).toHaveBeenCalledTimes(1);
@@ -186,7 +194,11 @@ describe("SitesGuard", () => {
         new Error("Permission denied")
       );
 
-      await expect(enableBlock()).rejects.toThrow("Permission denied");
+      await expect(enableBlock()).resolves.toEqual({
+        success: false,
+        severity: "fatal",
+        error: "Failed to enable blocking rules: Permission denied",
+      });
     });
 
     test("disableBlock should handle declarativeNetRequest errors", async () => {
@@ -194,7 +206,11 @@ describe("SitesGuard", () => {
         new Error("Permission denied")
       );
 
-      await expect(disableBlock()).rejects.toThrow("Permission denied");
+      await expect(disableBlock()).resolves.toEqual({
+        success: false,
+        severity: "fatal",
+        error: "Failed to disable blocking rules: Permission denied",
+      });
     });
 
     test("enableBlock should handle tabs.query errors", async () => {
@@ -202,7 +218,11 @@ describe("SitesGuard", () => {
         new Error("Tabs permission denied")
       );
 
-      await expect(enableBlock()).rejects.toThrow("Tabs permission denied");
+      await expect(enableBlock()).resolves.toEqual({
+        success: false,
+        severity: "warning",
+        error: "Failed to query tabs: Tabs permission denied",
+      });
     });
 
     test("enableBlock should handle active tab query errors gracefully", async () => {

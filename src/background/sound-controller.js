@@ -22,6 +22,7 @@ export async function handleSound() {
     await playAudio();
   } catch (error) {
     console.error("Sound error (timer continues):", error.message);
+    return { success: false, error: error.message };
   }
 }
 
@@ -74,7 +75,12 @@ async function sendAudioMessage(action, options = {}) {
 
 export async function setupSound() {
   try {
-    // offscreen documentを作成
+    // if offscreen document already exists, do nothing
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ["OFFSCREEN_DOCUMENT"],
+    });
+    if (contexts.length > 0) return;
+
     await chrome.offscreen.createDocument({
       url: "src/offscreen/offscreen.html",
       reasons: ["AUDIO_PLAYBACK"],

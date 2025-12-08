@@ -31,9 +31,13 @@ export function getTimer() {
 export async function saveSnapshot() {
   console.log("Saving timer state snapshot");
   if (!timer.instance) return;
-  await chrome.storage.local.set({
-    [SNAPSHOT_KEY]: timer.instance.toSnapshot(),
-  });
+  try{
+    await chrome.storage.local.set({
+      [SNAPSHOT_KEY]: timer.instance.toSnapshot(),
+    });
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 }
 
 /**

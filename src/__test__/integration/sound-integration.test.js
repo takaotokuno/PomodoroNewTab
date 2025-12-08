@@ -32,9 +32,8 @@ describe("Sound Integration - Core Functionality", () => {
 
       await initTimer();
       const timer = getTimer();
-      timer.start(25);
       timer.soundEnabled = true;
-      timer.sessionType = SESSION_TYPES.WORK;
+      timer.start(25);
 
       await handleSound();
 
@@ -57,8 +56,8 @@ describe("Sound Integration - Core Functionality", () => {
 
       await initTimer();
       const timer = getTimer();
-      timer.start(25);
       timer.soundEnabled = false;
+      timer.start(25);
 
       await handleSound();
 
@@ -99,12 +98,70 @@ describe("Sound Integration - Core Functionality", () => {
 
       await initTimer();
       const timer = getTimer();
-      timer.start(25);
       timer.soundEnabled = true;
+      timer.start(25);
+      // Manually set to BREAK to test the condition
       timer.sessionType = SESSION_TYPES.BREAK;
 
       await handleSound();
 
+      expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
+        type: "AUDIO_CONTROL",
+        action: "STOP",
+      });
+    });
+
+    test("should not play if already playing", async () => {
+      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+
+      const { initTimer, getTimer } = await import(
+        "@/background/timer-store.js"
+      );
+      const { handleSound } = await import("@/background/sound-controller.js");
+
+      await initTimer();
+      const timer = getTimer();
+      timer.soundEnabled = true;
+      timer.start(25);
+
+      // First call should play
+      await handleSound();
+      expect(chromeMock.runtime.sendMessage).toHaveBeenCalledTimes(1);
+
+      // Second call should not send additional message (already playing)
+      await handleSound();
+      expect(chromeMock.runtime.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    test("should stop audio during WORK to BREAK session transition", async () => {
+      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+
+      const { initTimer, getTimer } = await import(
+        "@/background/timer-store.js"
+      );
+      const { handleSound } = await import("@/background/sound-controller.js");
+
+      await initTimer();
+      const timer = getTimer();
+      timer.soundEnabled = true;
+      timer.start(25);
+
+      // First call should play during WORK session
+      await handleSound();
+      expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
+        type: "AUDIO_CONTROL",
+        action: "PLAY",
+        soundFile: "resources/nature-sound.mp3",
+        volume: 0.2,
+        loop: true,
+      });
+
+      // Simulate session completion and transition to BREAK
+      timer.sessionType = SESSION_TYPES.BREAK;
+      timer.mode = TIMER_MODES.RUNNING;
+
+      // Second call should stop during BREAK session
+      await handleSound();
       expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
         type: "AUDIO_CONTROL",
         action: "STOP",
@@ -167,30 +224,93 @@ describe("Sound Integration - Core Functionality", () => {
     });
   });
 
-  describe("Events Integration", () => {
-    test("should save sound settings", async () => {
+  describe("Storage Persistence", () => {
+    test("should persist sound settings across init", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
+      chromeMock.storage.local.get.mockResolvedValue({
+        pomodoroTimerSnapshot: {
+          soundEnabled: true,
+          mode: "setup",
+          sessionType: "work",
+          sessionDuration: 1500000,
+          totalDuration: 1500000,
+          sessionStartTime: null,
+          totalStartTime: null,
+          pausedAt: null,
+        },
+      });
 
-      const { handleEvents } = await import("@/background/events.js");
+      const { initTimer, getTimer } = await import(
+        "@/background/timer-store.js"
+      );
 
-      await handleEvents("sound/save", { isEnabled: true });
-
-      expect(chromeMock.storage.local.set).toHaveBeenCalled();
+      await initTimer();
+      expect(getTimer().soundEnabled).toBe(true);
     });
 
-    test("should handle timer start with sound", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+    test("should handle concurrent save operations", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
+      const { initTimer, getTimer } = await import(
+        "@/background/timer-store.js"
+      );
       const { handleEvents } = await import("@/background/events.js");
-      const { getTimer } = await import("@/background/timer-store.js");
 
-      await handleEvents("timer/start", { minutes: 25 });
-      await handleEvents("sound/save", { isEnabled: true });
+      await initTimer();
+
+      await Promise.all([
+        handleEvents("sound/save", { isEnabled: true }),
+        handleEvents("timer/start", { minutes: 25 }),
+      ]);
 
       const timer = getTimer();
-      expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.mode).toBe(TIMER_MODES.RUNNING);
+    });
+  });
+
+  describe("Offscreen Setup", () => {
+    test("should create offscreen document when not exists", async () => {
+      chromeMock.runtime.getContexts = vi.fn().mockResolvedValue([]);
+
+      const { setupSound } = await import("@/background/sound-controller.js");
+      await setupSound();
+
+      expect(chromeMock.offscreen.createDocument).toHaveBeenCalledWith({
+        url: "src/offscreen/offscreen.html",
+        reasons: ["AUDIO_PLAYBACK"],
+        justification: "Playing background audio for pomodoro timer",
+      });
+    });
+
+    test("should skip offscreen creation if already exists", async () => {
+      chromeMock.runtime.getContexts = vi.fn().mockResolvedValue([
+        { contextType: "OFFSCREEN_DOCUMENT" },
+      ]);
+
+      const { setupSound } = await import("@/background/sound-controller.js");
+      await setupSound();
+
+      expect(chromeMock.offscreen.createDocument).not.toHaveBeenCalled();
+    });
+
+    test("should handle offscreen setup failure", async () => {
+      chromeMock.runtime.getContexts = vi.fn().mockResolvedValue([]);
+      chromeMock.offscreen.createDocument.mockRejectedValue(
+        new Error("Setup failed")
+      );
+
+      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      const { setupSound } = await import("@/background/sound-controller.js");
+      await setupSound();
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Failed to setup sound:",
+        expect.stringContaining("Setup failed")
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 
@@ -211,36 +331,52 @@ describe("Sound Integration - Core Functionality", () => {
 
       await initTimer();
       const timer = getTimer();
-      timer.start(25);
       timer.soundEnabled = true;
+      timer.start(25);
 
       await handleSound();
 
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(consoleSpy).toHaveBeenCalledWith(
         "Sound error (timer continues):",
-        "Failed to send audio message: Sound error"
+        expect.stringContaining("Sound error")
       );
 
       consoleSpy.mockRestore();
     });
 
-    test("should handle offscreen setup failure", async () => {
-      chromeMock.offscreen.createDocument.mockRejectedValue(
-        new Error("Setup failed")
+    test("should reset isPlaying flag on playAudio error", async () => {
+      vi.resetModules();
+      chromeMock.runtime.sendMessage.mockRejectedValue(
+        new Error("Playback failed")
       );
 
-      const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const { playAudio } = await import("@/background/sound-controller.js");
 
-      const { setupSound } = await import("@/background/sound-controller.js");
-      await setupSound();
+      await expect(playAudio()).rejects.toThrow("Failed to send audio message: Playback failed");
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Failed to setup sound:",
-        "Setup failed"
+      // Second attempt should try again (isPlaying should be reset)
+      vi.resetModules();
+      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+      const { playAudio: playAudio2 } = await import("@/background/sound-controller.js");
+      await expect(playAudio2()).resolves.not.toThrow();
+    });
+
+    test("should reset isPlaying flag on stopAudio error", async () => {
+      vi.resetModules();
+      chromeMock.runtime.sendMessage.mockRejectedValue(
+        new Error("Stop failed")
       );
 
-      consoleSpy.mockRestore();
+      const { stopAudio } = await import("@/background/sound-controller.js");
+
+      await expect(stopAudio()).rejects.toThrow("Failed to send audio message: Stop failed");
+
+      // isPlaying should be reset even on error
+      vi.resetModules();
+      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+      const { stopAudio: stopAudio2 } = await import("@/background/sound-controller.js");
+      await expect(stopAudio2()).resolves.not.toThrow();
     });
   });
 });

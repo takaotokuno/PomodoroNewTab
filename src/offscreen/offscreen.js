@@ -112,7 +112,7 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
         case "PLAY":
           await loadAudio(
             message.soundFile || "resources/nature-sound.mp3",
-            message.volume || 0.3,
+            message.volume || 0.2,
             message.loop !== false
           );
           await playAudio();

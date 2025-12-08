@@ -23,9 +23,17 @@ export function setupAlarms() {
 
 export function startTick() {
   // Create a repeating alarm every 1 minute to keep Service Worker alive and update timer state
-  chrome.alarms.create(TICK, { periodInMinutes: 1 });
+  try {
+    chrome.alarms.create(TICK, { periodInMinutes: 1 });
+  } catch (e) {
+    return { success: false, severity: "fatal", error: `Failed to create alarm: ${e?.message || e}` };
+  }
 }
 
-export function stopTick() {
-  chrome.alarms.clear(TICK);
+export async function stopTick() {
+  try {
+    await chrome.alarms.clear(TICK);
+  } catch (e) {
+    return { success: false, severity: "fatal", error: `Failed to clear alarm: ${e?.message || e}` };
+  }
 }

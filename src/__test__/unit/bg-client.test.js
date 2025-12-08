@@ -5,6 +5,8 @@ import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { BGClient } from "@/ui/bg-client.js";
 import { setupChromeMock } from "../setup.chrome.js";
 
+vi.stubGlobal("alert", vi.fn());
+
 describe("BGClient", () => {
   let bgClient;
   let chromeMock;
@@ -31,14 +33,17 @@ describe("BGClient", () => {
     });
 
     test("should handle background error response", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({
+      const mockReturnValue = {
         success: false,
+        severity: "fatal",
         error: "Timer not initialized",
-      });
+      };
+      chromeMock.runtime.sendMessage.mockResolvedValue(mockReturnValue);
 
       const result = await bgClient.update();
 
-      expect(result).toBeUndefined();
+      expect(result).toEqual(mockReturnValue);
+      expect(alert).toHaveBeenCalledWith(mockReturnValue.error);
     });
 
     test("should handle chrome runtime error", async () => {
@@ -49,6 +54,9 @@ describe("BGClient", () => {
       const result = await bgClient.update();
 
       expect(result).toBeUndefined();
+      expect(alert).toHaveBeenCalledWith(
+        "Error communicating with background: Runtime error"
+      );
     });
   });
 
@@ -160,37 +168,24 @@ describe("BGClient", () => {
 
       const result = await bgClient._send("test/action");
 
-      expect(result).toBeUndefined();
+      expect(result).toBeNull();
+      expect(alert).toHaveBeenCalledWith(
+        "An unexpected error occurred in the background"
+      );
     });
 
     test("should handle response with custom error message", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({
+      const mockReturnValue = {
         success: false,
+        severity: "fatal",
         error: "Custom error message",
-      });
+      };
+      chromeMock.runtime.sendMessage.mockResolvedValue(mockReturnValue);
 
       const result = await bgClient._send("test/action");
 
-      expect(result).toBeUndefined();
-    });
-
-    test("should handle chrome runtime exceptions", async () => {
-      const consoleWarnSpy = vi
-        .spyOn(console, "warn")
-        .mockImplementation(() => {});
-      chromeMock.runtime.sendMessage.mockRejectedValue(
-        new Error("Connection error")
-      );
-
-      const result = await bgClient._send("test/action");
-
-      expect(result).toBeUndefined();
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "Background message failed:",
-        expect.any(Error)
-      );
-
-      consoleWarnSpy.mockRestore();
+      expect(result).toEqual(mockReturnValue);
+      expect(alert).toHaveBeenCalledWith(mockReturnValue.error);
     });
   });
 });

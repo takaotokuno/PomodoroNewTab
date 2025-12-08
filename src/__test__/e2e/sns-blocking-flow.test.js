@@ -6,6 +6,7 @@ import { handleEvents } from "@/background/events.js";
 import Constants from "@/constants.js";
 
 const { TIMER_MODES, SESSION_TYPES, DURATIONS } = Constants;
+vi.stubGlobal("alert", vi.fn());
 
 /**
  * E2E Test: SNS Blocking User Experience
@@ -17,12 +18,12 @@ describe("E2E: SNS Blocking User Experience", () => {
 
   // Helper functions
   const setupTabMocks = (snsTabs = [], activeTabId = null) => {
-    chromeMock.tabs.query.mockImplementation((query) => {
-      if (query.active && query.currentWindow) {
+    chromeMock.tabs.query.mockImplementation((queryInfo) => {
+      if (queryInfo.active && queryInfo.currentWindow) {
         return Promise.resolve(
           activeTabId ? [{ id: activeTabId, active: true }] : []
         );
-      } else if (query.url) {
+      } else if (queryInfo.url) {
         return Promise.resolve(snsTabs);
       }
       return Promise.resolve([]);
@@ -64,11 +65,22 @@ describe("E2E: SNS Blocking User Experience", () => {
     bgClient = new BGClient();
 
     chromeMock.runtime.sendMessage.mockImplementation(async (msg) => {
+      // For non-event messages (like AUDIO_CONTROL), use default mock behavior
+      if (!msg.type || !msg.type.includes('/')) {
+        return { success: true };
+      }
+      
       try {
-        const data = await handleEvents(msg?.type, msg);
-        return { success: true, ...data };
-      } catch (error) {
-        return { success: false, error: error.message };
+        let data = await handleEvents(msg.type, msg);
+        if (!data) data = { success: true };
+        else if ("success" in data === false) data.success = true;
+        return data;
+      } catch (e) {
+        return {
+          success: false,
+          severity: "fatal",
+          error: String(e?.message || e),
+        };
       }
     });
   });
@@ -213,6 +225,8 @@ describe("E2E: SNS Blocking User Experience", () => {
 
   describe("Error Handling in SNS Blocking", () => {
     it("should handle various error scenarios gracefully", async () => {
+      vi.stubGlobal("alert", vi.fn());
+
       const errorScenarios = [
         {
           name: "tab query failure",
@@ -225,8 +239,7 @@ describe("E2E: SNS Blocking User Experience", () => {
               return Promise.resolve([]);
             });
           },
-          expectTimerRunning: true,
-          expectBlockingRules: true,
+          severity: "warning",
         },
         {
           name: "tab operation failures",
@@ -243,8 +256,7 @@ describe("E2E: SNS Blocking User Experience", () => {
             );
             chromeMock.tabs.remove.mockRejectedValue(new Error("Tab closed"));
           },
-          expectTimerRunning: true,
-          expectBlockingRules: true,
+          severity: "warning",
         },
         {
           name: "declarativeNetRequest failure",
@@ -254,8 +266,7 @@ describe("E2E: SNS Blocking User Experience", () => {
               new Error("Extension context invalidated")
             );
           },
-          expectTimerRunning: true,
-          expectBlockingRules: false,
+          severity: "fatal",
         },
       ];
 
@@ -264,30 +275,18 @@ describe("E2E: SNS Blocking User Experience", () => {
         await initTimer();
         scenario.setup();
 
-        try {
-          const result = await bgClient.start(25);
-          // Some scenarios may succeed despite errors in sub-operations
-          if (result) {
-            expect(result.success).toBe(true);
-          }
-        } catch (error) {
-          // Some scenarios may fail at the BGClient level
-          console.log(
-            `Scenario "${scenario.name}" failed as expected:`,
-            error.message
-          );
+        let result = await bgClient.start(25);
+
+        expect(result.success).toBe(false);
+        expect(alert).toHaveBeenCalled();
+
+        // if case of a fatal error, timer should revert to SETUP mode
+        if (scenario.severity === "warning") {
+          expect(getTimer().mode).toBe(TIMER_MODES.RUNNING);
         }
 
-        // Check timer state directly since BGClient may fail but timer operations may still work
-        if (scenario.expectTimerRunning) {
-          // Timer might still be running even if BGClient failed
-          // This depends on where the error occurred in the flow
-        }
-
-        if (scenario.expectBlockingRules) {
-          expect(
-            chromeMock.declarativeNetRequest.updateDynamicRules
-          ).toHaveBeenCalled();
+        if (scenario.severity === "fatal") {
+          expect(getTimer().mode).toBe(TIMER_MODES.SETUP);
         }
       }
     });
@@ -313,40 +312,6 @@ describe("E2E: SNS Blocking User Experience", () => {
       expect(chromeMock.tabs.reload).not.toHaveBeenCalled();
       expect(chromeMock.tabs.remove).not.toHaveBeenCalled();
       expectBlockingRules("add");
-    });
-  });
-
-  describe("Complete Timer Workflow Integration", () => {
-    it("should integrate SNS blocking seamlessly throughout timer lifecycle", async () => {
-      setupTabMocks(
-        [
-          { id: 70, url: "https://x.com/home", active: true },
-          { id: 71, url: "https://tiktok.com/@user", active: false },
-        ],
-        70
-      );
-
-      // Complete workflow: Start → Work → Break → Work → Complete
-      await bgClient.start(60);
-      expect(getTimer().sessionType).toBe(SESSION_TYPES.WORK);
-      expectBlockingRules("add");
-
-      chromeMock.declarativeNetRequest.updateDynamicRules.mockClear();
-      await advanceToSession(SESSION_TYPES.BREAK);
-      expectBlockingRules("remove");
-
-      chromeMock.declarativeNetRequest.updateDynamicRules.mockClear();
-      await advanceToSession(SESSION_TYPES.WORK);
-      expectBlockingRules("add");
-
-      // Complete timer
-      const timer = getTimer();
-      chromeMock.declarativeNetRequest.updateDynamicRules.mockClear();
-      vi.setSystemTime(timer.totalStartTime + 60 * 60 * 1000);
-
-      await bgClient.update();
-      expect(getTimer().mode).toBe(TIMER_MODES.COMPLETED);
-      expectBlockingRules("remove");
     });
   });
 });

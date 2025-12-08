@@ -10,6 +10,9 @@ import Constants from "@/constants.js";
 
 const { TIMER_MODES, SESSION_TYPES } = Constants;
 
+vi.stubGlobal("alert", vi.fn());
+let isPlaying = false;
+
 describe("Sound End-to-End Tests", () => {
   let chromeMock;
   let bgClient;
@@ -17,12 +20,29 @@ describe("Sound End-to-End Tests", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     chromeMock = setupChromeMock();
+    await initTimer();
     bgClient = new BGClient();
 
-    // Mock offscreen API
-    chromeMock.offscreen = {
-      createDocument: vi.fn().mockResolvedValue(undefined),
-    };
+    chromeMock.runtime.sendMessage.mockImplementation(async (msg) => {
+      if (msg.type === "AUDIO_CONTROL") {
+        if (msg.action === "PLAY") isPlaying = true;
+        else if (msg.action === "STOP") isPlaying = false;
+        return { success: true };
+      }
+
+      try {
+        let data = await handleEvents(msg.type, msg);
+        if (!data) data = { success: true };
+        else if ("success" in data === false) data.success = true;
+        return data;
+      } catch (e) {
+        return {
+          success: false,
+          severity: "fatal",
+          error: String(e?.message || e),
+        };
+      }
+    });
 
     // Mock DOM
     vi.stubGlobal("document", {
@@ -45,151 +65,72 @@ describe("Sound End-to-End Tests", () => {
     vi.unstubAllGlobals();
   });
 
-  describe("Sound Workflow", () => {
+  describe("Complete User Workflows", () => {
     test("should handle complete timer session with sound", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
       // Enable sound and start timer
-      await handleEvents("sound/save", { isEnabled: true });
-      await handleEvents("timer/start", { minutes: 25 });
+      await bgClient.saveSoundSettings(true);
+      await bgClient.start(25);
 
       const timer = getTimer();
       expect(timer.soundEnabled).toBe(true);
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(timer.sessionType).toBe(SESSION_TYPES.WORK);
+      expect(isPlaying).toBe(true);
 
       // Test pause/resume cycle
-      await handleEvents("timer/pause");
+      await bgClient.pause();
       expect(timer.mode).toBe(TIMER_MODES.PAUSED);
+      expect(isPlaying).toBe(false);
 
-      await handleEvents("timer/resume");
+      await bgClient.resume();
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
+      expect(isPlaying).toBe(true);
 
       // Reset and verify sound setting persists
-      await handleEvents("timer/reset");
+      await bgClient.reset();
       expect(timer.mode).toBe(TIMER_MODES.SETUP);
       expect(timer.soundEnabled).toBe(true);
+      expect(isPlaying).toBe(false);
     });
 
-    test("should toggle sound during active session", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+    test("should stop sound when paused", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      await handleEvents("timer/start", { minutes: 25 });
-      const timer = getTimer();
+      await bgClient.saveSoundSettings(true);
+      await bgClient.start(25);
+      expect(isPlaying).toBe(true);
 
-      // Toggle sound on/off during active timer
-      await handleEvents("sound/save", { isEnabled: true });
-      expect(timer.soundEnabled).toBe(true);
-
-      await handleEvents("sound/save", { isEnabled: false });
-      expect(timer.soundEnabled).toBe(false);
-      // sound/save doesn't automatically save to storage in current implementation
-      // The test should focus on the timer state change
-    });
-  });
-
-  describe("UI-Background Integration", () => {
-    test("should sync sound settings via BGClient", async () => {
-      chromeMock.runtime.sendMessage.mockImplementation((message) => {
-        if (message.type === "sound/save") {
-          // Update the timer state when sound is saved
-          const timer = getTimer();
-          timer.soundEnabled = message.isEnabled;
-          return Promise.resolve({ success: true });
-        }
-        if (message.type === "timer/update") {
-          const timer = getTimer();
-          return Promise.resolve({
-            success: true,
-            soundEnabled: timer.soundEnabled,
-          });
-        }
-        return Promise.resolve({ success: true });
-      });
-
-      const result = await bgClient.saveSoundSettings(true);
-      expect(result.success).toBe(true);
-      expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
-        type: "sound/save",
-        isEnabled: true,
-      });
-
-      const state = await bgClient.update();
-      expect(state.soundEnabled).toBe(true);
+      await bgClient.pause();
+      expect(isPlaying).toBe(false);
+      expect(getTimer().soundEnabled).toBe(true); // Setting persists
     });
 
-    test("should handle BGClient errors", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({
-        success: false,
-        error: "Storage error",
-      });
-
-      const result = await bgClient.saveSoundSettings(true);
-      expect(result).toBeUndefined();
-    });
-  });
-
-  describe("Storage & Error Handling", () => {
-    test("should persist sound settings", async () => {
+    test("should not play sound when disabled from start", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
-      chromeMock.storage.local.get.mockResolvedValue({ soundEnabled: true });
 
-      await handleEvents("sound/save", { isEnabled: true });
+      await bgClient.saveSoundSettings(false);
+      await bgClient.start(25);
+
+      expect(getTimer().soundEnabled).toBe(false);
+      expect(isPlaying).toBe(false);
+    });
+
+    test("should save sound settings via events integration", async () => {
+      chromeMock.storage.local.set.mockResolvedValue(undefined);
+
+      await bgClient.saveSoundSettings(true);
+
+      // Verify storage was called (snapshot includes soundEnabled)
       expect(chromeMock.storage.local.set).toHaveBeenCalled();
-
-      // Simulate restart
-      await initTimer();
-      expect(getTimer().soundEnabled).toBe(true);
-    });
-
-    test("should handle storage errors gracefully", async () => {
-      // Reset modules to force re-initialization
-      vi.resetModules();
-
-      chromeMock.storage.local.get.mockRejectedValue(
-        new Error("Storage error")
-      );
-
-      const { initTimer } = await import("@/background/timer-store.js");
-      await expect(initTimer()).rejects.toThrow("Storage error");
-    });
-  });
-
-  describe("Resource Management", () => {
-    test("should create offscreen document only once", async () => {
-      chromeMock.offscreen.createDocument.mockResolvedValue(undefined);
-
-      // Reset modules to ensure fresh import
-      vi.resetModules();
-
-      // Import and call setupSound directly
-      const { setupSound } = await import("@/background/sound-controller.js");
-
-      await setupSound();
-
-      expect(chromeMock.offscreen.createDocument).toHaveBeenCalledTimes(1);
-      expect(chromeMock.offscreen.createDocument).toHaveBeenCalledWith({
-        url: "src/offscreen/offscreen.html",
-        reasons: ["AUDIO_PLAYBACK"],
-        justification: "Playing background audio for pomodoro timer",
-      });
-    });
-
-    test("should handle concurrent operations", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
-      chromeMock.storage.local.set.mockResolvedValue(undefined);
-
-      await Promise.all([
-        handleEvents("sound/save", { isEnabled: true }),
-        handleEvents("timer/start", { minutes: 25 }),
-        handleEvents("timer/pause"),
-      ]);
+      const callArg = chromeMock.storage.local.set.mock.calls[0][0];
+      expect(callArg.pomodoroTimerSnapshot.soundEnabled).toBe(true);
 
       const timer = getTimer();
-      expect(timer.mode).toBe(TIMER_MODES.PAUSED);
       expect(timer.soundEnabled).toBe(true);
     });
   });
+
+
 });

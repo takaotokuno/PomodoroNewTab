@@ -37,4 +37,10 @@ export default class Constants {
     "yomou.syosetu.com",
     "read.amazon.co.jp/manga",
   ];
+
+  static SEVERITY_LEVELS = {
+    INFO: "info",
+    WARNING: "warning",
+    FATAL: "fatal",
+  };
 }

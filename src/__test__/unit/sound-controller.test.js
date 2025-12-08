@@ -13,9 +13,10 @@ const mockTimer = {
   mode: TIMER_MODES.RUNNING,
   sessionType: SESSION_TYPES.WORK,
 };
+let currentTimer;
 
 vi.mock("@/background/timer-store.js", () => ({
-  getTimer: vi.fn(() => mockTimer),
+  getTimer: vi.fn(() => currentTimer),
 }));
 
 describe("SoundController", () => {
@@ -27,16 +28,9 @@ describe("SoundController", () => {
     vi.clearAllMocks();
 
     chromeMock = setupChromeMock();
-    chromeMock.offscreen = {
-      createDocument: vi.fn().mockResolvedValue(undefined),
-    };
+    chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
 
-    // Reset mock timer state
-    Object.assign(mockTimer, {
-      soundEnabled: true,
-      mode: TIMER_MODES.RUNNING,
-      sessionType: SESSION_TYPES.WORK,
-    });
+    currentTimer = { ...mockTimer };
 
     const soundController = await import("@/background/sound-controller.js");
     ({ handleSound, playAudio, stopAudio, setupSound } = soundController);
@@ -44,8 +38,6 @@ describe("SoundController", () => {
 
   describe("handleSound()", () => {
     test("should play audio when conditions are met", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
-
       await handleSound();
 
       expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
@@ -58,8 +50,7 @@ describe("SoundController", () => {
     });
 
     test("should stop audio when sound is disabled", async () => {
-      mockTimer.soundEnabled = false;
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+      currentTimer.soundEnabled = false;
 
       await handleSound();
 
@@ -70,8 +61,7 @@ describe("SoundController", () => {
     });
 
     test("should stop audio when not in work session", async () => {
-      mockTimer.sessionType = SESSION_TYPES.BREAK;
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
+      currentTimer.sessionType = SESSION_TYPES.BREAK;
 
       await handleSound();
 
@@ -82,8 +72,6 @@ describe("SoundController", () => {
     });
 
     test("should not play if already playing", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({ success: true });
-
       await handleSound();
       await handleSound();
 
@@ -127,14 +115,29 @@ describe("SoundController", () => {
   });
 
   describe("setupSound()", () => {
-    test("should create offscreen document", async () => {
+    test("should create offscreen document only once", async () => {
       await setupSound();
 
+      expect(chromeMock.offscreen.createDocument).toHaveBeenCalledTimes(1);
       expect(chromeMock.offscreen.createDocument).toHaveBeenCalledWith({
         url: "src/offscreen/offscreen.html",
         reasons: ["AUDIO_PLAYBACK"],
         justification: "Playing background audio for pomodoro timer",
       });
+    });
+
+    test("should not create offscreen document if already created", async () => {
+      chromeMock.runtime.getContexts = vi.fn().mockResolvedValue([
+        {
+          contextType: "OFFSCREEN_DOCUMENT",
+          documentUrl:
+            "chrome-extension://test-id/src/offscreen/offscreen.html",
+        },
+      ]);
+
+      await setupSound();
+
+      expect(chromeMock.offscreen.createDocument).not.toHaveBeenCalled();
     });
   });
 });

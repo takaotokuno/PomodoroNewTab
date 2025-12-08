@@ -269,9 +269,11 @@ describe("SNS Blocking Integration", () => {
         new Error("Extension context invalidated")
       );
 
-      await expect(enableBlock()).rejects.toThrow(
-        "Extension context invalidated"
-      );
+      await expect(enableBlock()).resolves.toEqual({
+        success: false,
+        severity: "fatal",
+        error: "Failed to enable blocking rules: Extension context invalidated",
+      });
     });
 
     it("should handle tabs.query permission errors", async () => {
@@ -279,9 +281,11 @@ describe("SNS Blocking Integration", () => {
         new Error("Cannot access chrome://newtab/")
       );
 
-      await expect(enableBlock()).rejects.toThrow(
-        "Cannot access chrome://newtab/"
-      );
+      await expect(enableBlock()).resolves.toEqual({
+        success: false,
+        severity: "warning",
+        error: "Failed to query tabs: Cannot access chrome://newtab/",
+      });
     });
 
     it("should continue processing other tabs when individual operations fail", async () => {

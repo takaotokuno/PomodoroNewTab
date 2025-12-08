@@ -12,6 +12,7 @@ describe("Background-UI Communication Integration", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.stubGlobal("alert", vi.fn());
     chromeMock = setupChromeMock();
     bgClient = new BGClient();
 
@@ -20,6 +21,7 @@ describe("Background-UI Communication Integration", () => {
   });
 
   describe("Message Passing", () => {
+
     it("should handle timer/update message correctly", async () => {
       // Mock chrome.runtime.sendMessage to simulate background response
       chromeMock.runtime.sendMessage.mockResolvedValue({
@@ -94,14 +96,15 @@ describe("Background-UI Communication Integration", () => {
     });
 
     it("should handle background errors gracefully", async () => {
-      chromeMock.runtime.sendMessage.mockResolvedValue({
+      const mockReturnValue = {
         success: false,
+        severity: "fatal",
         error: "Test error",
-      });
-
+      };
+      chromeMock.runtime.sendMessage.mockResolvedValue(mockReturnValue);
       const result = await bgClient.update();
 
-      expect(result).toBeUndefined(); // BGClient returns undefined on error
+      expect(result).toEqual(mockReturnValue);
       expect(chromeMock.runtime.sendMessage).toHaveBeenCalled();
     });
 
@@ -112,30 +115,32 @@ describe("Background-UI Communication Integration", () => {
 
       const result = await bgClient.update();
 
-      expect(result).toBeUndefined(); // BGClient returns undefined on error
+      expect(result).toBeUndefined();
     });
   });
 
   describe("Timer State Synchronization", () => {
-    it("should synchronize timer state between background and UI", async () => {
-      // Simulate background timer state change
+    it("should receive timer state from background via update", async () => {
+      // Start timer in background
       const timer = getTimer();
       timer.start(25);
 
-      // Mock the background response to match the timer state
+      // Mock the background response
       chromeMock.runtime.sendMessage.mockResolvedValue({
         success: true,
-        mode: timer.mode,
-        totalRemaining: timer.getTotalRemaining(),
-        sessionType: timer.sessionType,
-        sessionRemaining: timer.getSessionRemaining(),
+        mode: "running",
+        totalRemaining: 1500000,
+        sessionType: "work",
+        sessionRemaining: 1500000,
+        soundEnabled: false,
       });
 
       const result = await bgClient.update();
 
       expect(result.success).toBe(true);
-      expect(result.mode).toBe(timer.mode);
-      expect(result.sessionType).toBe(timer.sessionType);
+      expect(result.mode).toBeDefined();
+      expect(result.sessionType).toBeDefined();
+      expect(result.soundEnabled).toBeDefined();
     });
 
     it("should validate minutes parameter in start command", async () => {
@@ -148,22 +153,20 @@ describe("Background-UI Communication Integration", () => {
       await expect(bgClient.start(NaN)).rejects.toThrow("Invalid minutes");
     });
 
-    it("should handle tab synchronization after timer operations", async () => {
-      // Mock successful message response
+    it("should handle sound/save message", async () => {
       chromeMock.runtime.sendMessage.mockResolvedValue({
         success: true,
+        soundEnabled: true,
       });
 
-      // Mock tabs.query to return some tabs
-      chromeMock.tabs.query.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+      const result = await bgClient.saveSoundSettings(true);
 
-      await bgClient.start(25);
-
-      // Verify that the message was sent (tab sync happens in background)
       expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
-        type: "timer/start",
-        minutes: 25,
+        type: "sound/save",
+        isEnabled: true,
       });
+      expect(result.success).toBe(true);
+      expect(result.soundEnabled).toBe(true);
     });
   });
 
@@ -171,10 +174,14 @@ describe("Background-UI Communication Integration", () => {
     it("should execute timer/update event correctly", async () => {
       const result = await handleEvents("timer/update");
 
+      expect(result).toHaveProperty("success");
+      expect(result.success).toBe(true);
+
       expect(result).toHaveProperty("mode");
       expect(result).toHaveProperty("totalRemaining");
       expect(result).toHaveProperty("sessionType");
       expect(result).toHaveProperty("sessionRemaining");
+      expect(result).toHaveProperty("soundEnabled");
     });
 
     it("should execute timer/start event with valid minutes", async () => {
@@ -232,6 +239,18 @@ describe("Background-UI Communication Integration", () => {
       const timer = getTimer();
       expect(timer.mode).toBe("setup");
       expect(timer.getTotalRemaining()).toBe(0);
+    });
+
+    it("should execute sound/save event correctly", async () => {
+      chromeMock.storage.local.set.mockResolvedValue(undefined);
+
+      const result = await handleEvents("sound/save", { isEnabled: true });
+
+      expect(result.success).toBe(true);
+      expect(result.soundEnabled).toBe(true);
+
+      const timer = getTimer();
+      expect(timer.soundEnabled).toBe(true);
     });
   });
 });

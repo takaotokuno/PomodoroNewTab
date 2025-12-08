@@ -9,11 +9,12 @@ export function setupChromeMock() {
   };
 
   const runtime = {
-    sendMessage: vi.fn(),
+    sendMessage: vi.fn().mockResolvedValue({ success: true }),
     onInstalled: { addListener: vi.fn() },
     onStartup: { addListener: vi.fn() },
     onMessage: { addListener: vi.fn() },
     getURL: vi.fn((path) => path),
+    getContexts: vi.fn().mockResolvedValue([]),
   };
 
   const alarms = {
@@ -38,6 +39,11 @@ export function setupChromeMock() {
     remove: vi.fn().mockResolvedValue(undefined),
   };
 
+  const offscreen = {
+    createDocument: vi.fn().mockResolvedValue(undefined),
+    closeDocument: vi.fn().mockResolvedValue(undefined),
+  };
+
   const chromeMock = {
     storage: { local: storageLocal },
     runtime,
@@ -45,6 +51,7 @@ export function setupChromeMock() {
     notifications,
     declarativeNetRequest,
     tabs,
+    offscreen,
   };
 
   vi.stubGlobal("chrome", chromeMock);

@@ -1,3 +1,4 @@
+import { getTimer } from "./timer-store.js";
 import Constants from "../constants.js";
 const { BLOCK_SITES } = Constants;
 
@@ -25,18 +26,34 @@ function _allRuleIds() {
 
 export async function enableBlock() {
   const rules = _buildRules();
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    addRules: rules,
-    removeRuleIds: [],
-  });
-  await _scrubOpenTabs();
+  try {
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      addRules: rules,
+      removeRuleIds: [],
+    });
+  } catch (e) {
+    getTimer().reset();
+    await disableBlock();
+    const errMsg = "Failed to enable blocking rules: " + e.message;
+    return { success: false, severity: "fatal", error: errMsg };
+  }
+  try {
+    await _scrubOpenTabs();
+  } catch (e) {
+    return { success: false, severity: "warning", error: e.message };
+  }
 }
 
 export async function disableBlock() {
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    addRules: [],
-    removeRuleIds: _allRuleIds(),
-  });
+  try {
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      addRules: [],
+      removeRuleIds: _allRuleIds(),
+    });
+  } catch (error) {
+    const errMsg = "Failed to disable blocking rules: " + error.message;
+    return { success: false, severity: "fatal", error: errMsg };
+  }
 }
 
 async function _scrubOpenTabs() {
@@ -45,7 +62,7 @@ async function _scrubOpenTabs() {
   const query = urlType1.concat(urlType2);
 
   // Let critical errors (like tabs.query permission issues) bubble up
-  const tabs = await chrome.tabs.query({ url: query });
+  const tabs = await _queryTabs(query);
   const activeTab = await _getActiveTab();
 
   if (tabs.length === 0) {
@@ -68,9 +85,17 @@ async function _scrubOpenTabs() {
   // Log any failures for debugging
   const failures = results.filter((result) => result.status === "rejected");
   if (failures.length > 0) {
-    console.warn(
+    throw new Error(
       `Failed to process ${failures.length} out of ${tabs.length} SNS tabs`
     );
+  }
+}
+
+async function _queryTabs(query) {
+  try {
+    return await chrome.tabs.query({ url: query });
+  } catch (e) {
+    throw new Error("Failed to query tabs: " + e.message);
   }
 }
 

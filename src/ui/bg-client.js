@@ -31,10 +31,19 @@ export class BGClient {
   async _send(type, payload = {}) {
     try {
       const res = await chrome.runtime.sendMessage({ type, ...payload });
-      if (!res?.success) throw new Error(res?.error || "Background error");
+      if (res === void 0) {
+        throw new Error("No response from background");
+      }
+      if (!res?.success) {
+        let errorMsg = "An unexpected error occurred in the background";
+        if (res?.error) {
+          errorMsg = res.error;
+        }
+        alert(errorMsg);
+      }
       return res;
-    } catch (e) {
-      console.warn("Background message failed:", e);
+    } catch (error) {
+      alert("Error communicating with background: " + error.message);
     }
   }
 }
