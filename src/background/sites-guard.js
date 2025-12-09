@@ -24,6 +24,11 @@ function _allRuleIds() {
   return BLOCK_SITES.map((_, i) => RULE_ID_BASE + i);
 }
 
+/**
+ * Enable site blocking rules
+ * @throws {Error} If enabling blocking rules fails (fatal)
+ * @throws {Error} If scrubbing tabs fails (non-fatal, will be caught by caller)
+ */
 export async function enableBlock() {
   const rules = _buildRules();
   try {
@@ -34,26 +39,20 @@ export async function enableBlock() {
   } catch (e) {
     getTimer().reset();
     await disableBlock();
-    const errMsg = "Failed to enable blocking rules: " + e.message;
-    return { success: false, severity: "fatal", error: errMsg };
+    throw new Error("Failed to enable blocking rules: " + e.message);
   }
-  try {
-    await _scrubOpenTabs();
-  } catch (e) {
-    return { success: false, severity: "warning", error: e.message };
-  }
+  await _scrubOpenTabs();
 }
 
+/**
+ * Disable site blocking rules
+ * @throws {Error} If disabling blocking rules fails
+ */
 export async function disableBlock() {
-  try {
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      addRules: [],
-      removeRuleIds: _allRuleIds(),
-    });
-  } catch (error) {
-    const errMsg = "Failed to disable blocking rules: " + error.message;
-    return { success: false, severity: "fatal", error: errMsg };
-  }
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: [],
+    removeRuleIds: _allRuleIds(),
+  });
 }
 
 async function _scrubOpenTabs() {

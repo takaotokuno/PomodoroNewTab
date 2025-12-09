@@ -1,20 +1,13 @@
 import Constants from "../constants.js";
 
-export function alertError(err, extra = {}) {
+export function createErrObject(err, isFatal) {
+  const sev = isFatal
+    ? Constants.SEVERITY_LEVELS.FATAL
+    : Constants.SEVERITY_LEVELS.WARNING;
   return {
     success: false,
-    severity: Constants.SEVERITY_LEVELS.WARNING,
+    severity: sev,
     error: String(err?.message || err),
-    ...extra,
-  };
-}
-
-export function fatalError(err, extra = {}) {
-  return {
-    success: false,
-    severity: Constants.SEVERITY_LEVELS.FATAL,
-    error: String(err?.message || err),
-    ...extra,
   };
 }
 

@@ -38,6 +38,10 @@ vi.mock("@/background/sound-controller.js", () => ({
   handleSound: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/background/notification.js", () => ({
+  notify: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Test constants
 const MOCK_TOTAL_REMAINING = 123;
 const MOCK_SESSION_REMAINING = 45;
@@ -60,6 +64,7 @@ function initializeTimerStateMock() {
 
 let fakeTimer;
 let mockStartTick, mockStopTick, mockEnableBlock, mockDisableBlock;
+let mockInitTimer, mockSaveSnapshot, mockHandleSound, mockNotify;
 
 beforeAll(() => {
   vi.useFakeTimers();
@@ -76,15 +81,21 @@ beforeEach(async () => {
   // Get mock functions from the mocked modules
   const setupAlarms = await import("@/background/setup-alarms.js");
   const sitesGuard = await import("@/background/sites-guard.js");
+  const timerStoreModule = await import("@/background/timer-store.js");
+  const soundController = await import("@/background/sound-controller.js");
+  const notificationModule = await import("@/background/notification.js");
 
   mockStartTick = setupAlarms.startTick;
   mockStopTick = setupAlarms.stopTick;
   mockEnableBlock = sitesGuard.enableBlock;
   mockDisableBlock = sitesGuard.disableBlock;
+  mockInitTimer = timerStoreModule.initTimer;
+  mockSaveSnapshot = timerStoreModule.saveSnapshot;
+  mockHandleSound = soundController.handleSound;
+  mockNotify = notificationModule.notify;
 
   fakeTimer = initializeTimerStateMock();
   vi.spyOn(timerStore, "getTimer").mockReturnValue(fakeTimer);
-  vi.spyOn(notification, "notify").mockResolvedValue();
 });
 
 describe("Events", () => {
@@ -176,34 +187,44 @@ describe("Events", () => {
       );
     });
 
-    test('should throw error when "timer/start" is called with minutes below minimum', async () => {
-      await expect(handleEvents("timer/start", { minutes: 4 })).rejects.toThrow(
-        "Invalid minutes: must be at least 5"
-      );
+    test('should return fatal error when "timer/start" is called with minutes below minimum', async () => {
+      const result = await handleEvents("timer/start", { minutes: 4 });
+      
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Invalid minutes: must be at least 5");
     });
 
-    test('should throw error when "timer/start" is called with minutes above maximum', async () => {
-      await expect(
-        handleEvents("timer/start", { minutes: 301 })
-      ).rejects.toThrow("Invalid minutes: must be at most 300");
+    test('should return fatal error when "timer/start" is called with minutes above maximum', async () => {
+      const result = await handleEvents("timer/start", { minutes: 301 });
+      
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Invalid minutes: must be at most 300");
     });
 
-    test('should throw error when "timer/start" is called without minutes', async () => {
-      await expect(handleEvents("timer/start", {})).rejects.toThrow(
-        "Invalid minutes: parameter is required"
-      );
+    test('should return fatal error when "timer/start" is called without minutes', async () => {
+      const result = await handleEvents("timer/start", {});
+      
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Invalid minutes: parameter is required");
     });
 
-    test('should throw error when "timer/start" is called with non-number minutes', async () => {
-      await expect(
-        handleEvents("timer/start", { minutes: "25" })
-      ).rejects.toThrow("Invalid minutes: must be a number");
+    test('should return fatal error when "timer/start" is called with non-number minutes', async () => {
+      const result = await handleEvents("timer/start", { minutes: "25" });
+      
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Invalid minutes: must be a number");
     });
 
-    test('should throw error when "timer/start" is called with NaN', async () => {
-      await expect(
-        handleEvents("timer/start", { minutes: NaN })
-      ).rejects.toThrow("Invalid minutes: must be a number");
+    test('should return fatal error when "timer/start" is called with NaN', async () => {
+      const result = await handleEvents("timer/start", { minutes: NaN });
+      
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Invalid minutes: must be a number");
     });
 
     test('should enable block and start tick when "timer/start" is invoked', async () => {
@@ -355,10 +376,153 @@ describe("Events", () => {
       expect(result.soundEnabled).toBe(false);
     });
 
-    test('should throw error when "sound/save" is called without isEnabled', async () => {
-      await expect(handleEvents("sound/save", {})).rejects.toThrow(
-        "Invalid isEnabled: parameter is required"
+    test('should return fatal error when "sound/save" is called without isEnabled', async () => {
+      const result = await handleEvents("sound/save", {});
+      
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Invalid isEnabled: parameter is required");
+    });
+  });
+
+  describe("Error handling and conversion", () => {
+    test("should return fatal error when initTimer throws", async () => {
+      mockInitTimer.mockRejectedValueOnce(new Error("Init failed"));
+
+      const result = await handleEvents("timer/pause");
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.FATAL,
+        error: "Init failed",
+      });
+    });
+
+    test("should return fatal error when enableBlock throws in timer/start", async () => {
+      mockEnableBlock.mockRejectedValueOnce(new Error("Block failed"));
+
+      const result = await handleEvents("timer/start", { minutes: 25 });
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.FATAL,
+        error: "Block failed",
+      });
+    });
+
+    test("should return fatal error when startTick throws in timer/start", async () => {
+      mockStartTick.mockRejectedValueOnce(new Error("Tick failed"));
+
+      const result = await handleEvents("timer/start", { minutes: 25 });
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.FATAL,
+        error: "Tick failed",
+      });
+    });
+
+    test("should return fatal error when stopTick throws in timer/pause", async () => {
+      mockStopTick.mockRejectedValueOnce(new Error("Stop failed"));
+
+      const result = await handleEvents("timer/pause");
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.FATAL,
+        error: "Stop failed",
+      });
+    });
+
+    test("should return fatal error when disableBlock throws in timer/reset", async () => {
+      mockDisableBlock.mockRejectedValueOnce(new Error("Disable failed"));
+
+      const result = await handleEvents("timer/reset");
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.FATAL,
+        error: "Disable failed",
+      });
+    });
+
+    test("should return warning when handleSound throws", async () => {
+      mockHandleSound.mockRejectedValueOnce(new Error("Sound failed"));
+
+      const result = await handleEvents("timer/pause");
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.WARNING,
+        error: "Sound failed",
+      });
+    });
+
+    test("should return warning when saveSnapshot throws", async () => {
+      mockSaveSnapshot.mockRejectedValueOnce(new Error("Save failed"));
+
+      const result = await handleEvents("timer/pause");
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.WARNING,
+        error: "Save failed",
+      });
+    });
+
+    test("should return warning when notify throws in timer/update", async () => {
+      fakeTimer.update.mockReturnValue({ mode: TIMER_MODES.COMPLETED });
+      mockNotify.mockRejectedValueOnce(new Error("Notify failed"));
+
+      const result = await handleEvents("timer/update");
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: false,
+          severity: Constants.SEVERITY_LEVELS.WARNING,
+          error: expect.stringContaining("Notify failed"),
+        })
       );
+    });
+
+    test("should merge multiple warnings when multiple non-fatal errors occur", async () => {
+      mockHandleSound.mockRejectedValueOnce(new Error("Sound failed"));
+      mockSaveSnapshot.mockRejectedValueOnce(new Error("Save failed"));
+
+      const result = await handleEvents("timer/pause");
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: false,
+          severity: Constants.SEVERITY_LEVELS.WARNING,
+          error: expect.stringMatching(/Sound failed[\s\S]*Save failed|Save failed[\s\S]*Sound failed/),
+        })
+      );
+    });
+
+    test("should return fatal error immediately when fatal error occurs before warnings", async () => {
+      mockStopTick.mockRejectedValueOnce(new Error("Fatal error"));
+      mockHandleSound.mockRejectedValueOnce(new Error("Warning error"));
+
+      const result = await handleEvents("timer/pause");
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.FATAL,
+        error: "Fatal error",
+      });
+      // handleSound should not be called because fatal error occurred first
+      expect(mockHandleSound).not.toHaveBeenCalled();
+    });
+
+    test("should return unknown event error for invalid event type", async () => {
+      const result = await handleEvents("invalid/event");
+
+      expect(result).toEqual({
+        success: false,
+        severity: Constants.SEVERITY_LEVELS.FATAL,
+        error: "Unknown event type: invalid/event",
+      });
     });
   });
 });

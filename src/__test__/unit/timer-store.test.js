@@ -162,7 +162,7 @@ describe("TimerStore", () => {
       });
     });
 
-    test("should handle chrome.storage.local.set errors", async () => {
+    test("should throw error when chrome.storage.local.set fails", async () => {
       chromeMock.storage.local.set.mockRejectedValue(
         new Error("Storage write error")
       );
@@ -170,10 +170,7 @@ describe("TimerStore", () => {
       await initTimer();
       mockTimerInstance.toSnapshot.mockReturnValue({ mode: TIMER_MODES.SETUP });
 
-      await expect(saveSnapshot()).resolves.toEqual({
-        success: false,
-        error: "Storage write error",
-      });
+      await expect(saveSnapshot()).rejects.toThrow("Storage write error");
     });
   });
 });

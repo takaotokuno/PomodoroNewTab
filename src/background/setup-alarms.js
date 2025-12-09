@@ -21,27 +21,19 @@ export function setupAlarms() {
   });
 }
 
+/**
+ * Start the timer tick alarm
+ * @throws {Error} If alarm creation fails
+ */
 export function startTick() {
   // Create a repeating alarm every 1 minute to keep Service Worker alive and update timer state
-  try {
-    chrome.alarms.create(TICK, { periodInMinutes: 1 });
-  } catch (e) {
-    return {
-      success: false,
-      severity: "fatal",
-      error: `Failed to create alarm: ${e?.message || e}`,
-    };
-  }
+  chrome.alarms.create(TICK, { periodInMinutes: 1 });
 }
 
+/**
+ * Stop the timer tick alarm
+ * @throws {Error} If alarm clearing fails
+ */
 export async function stopTick() {
-  try {
-    await chrome.alarms.clear(TICK);
-  } catch (e) {
-    return {
-      success: false,
-      severity: "fatal",
-      error: `Failed to clear alarm: ${e?.message || e}`,
-    };
-  }
+  await chrome.alarms.clear(TICK);
 }

@@ -94,10 +94,12 @@ describe("SoundController", () => {
       });
     });
 
-    test("should handle errors", async () => {
+    test("should throw error when sendMessage fails", async () => {
       chromeMock.runtime.sendMessage.mockRejectedValue(new Error("Send error"));
 
-      await expect(playAudio()).rejects.toThrow("Failed to send audio message");
+      await expect(playAudio()).rejects.toThrow(
+        "Failed to send audio message: Send error"
+      );
     });
   });
 

@@ -363,7 +363,8 @@ describe("E2E: Complete User Timer Workflow", () => {
       // Result has warning due to notification failure, but timer state updated correctly
       expect(updateResult.success).toBe(false);
       expect(updateResult.severity).toBe("warning");
-      expect(updateResult.warnings).toBeDefined();
+      expect(updateResult.error).toBeDefined();
+      expect(updateResult.error).toContain("Notification failed");
       expect(updateResult.sessionType).toBe(SESSION_TYPES.BREAK);
 
       // Timer state should have switched to break despite notification failure

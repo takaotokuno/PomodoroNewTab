@@ -1,7 +1,6 @@
 import { describe, test, expect } from "vitest";
 import {
-  alertError,
-  fatalError,
+  createErrObject,
   normalizeResponse,
   isFatal,
 } from "@/background/result.js";
@@ -19,25 +18,23 @@ describe("Result Module", () => {
     expect(res).toEqual({ success: true });
   });
 
-  test("fatalError should return fatal error object", () => {
+  test("createErrObject should return fatal error object when isFatal is true", () => {
     const error = new Error("Test fatal error");
-    const res = fatalError(error, { step: "testStep" });
+    const res = createErrObject(error, true);
     expect(res).toEqual({
       success: false,
       severity: SEVERITY_LEVELS.FATAL,
       error: "Test fatal error",
-      step: "testStep",
     });
   });
 
-  test("alertError should return alert error object", () => {
-    const error = new Error("Test alert error");
-    const res = alertError(error, { step: "testStep" });
+  test("createErrObject should return warning error object when isFatal is false", () => {
+    const error = new Error("Test warning error");
+    const res = createErrObject(error, false);
     expect(res).toEqual({
       success: false,
       severity: SEVERITY_LEVELS.WARNING,
-      error: "Test alert error",
-      step: "testStep",
+      error: "Test warning error",
     });
   });
 
@@ -47,14 +44,14 @@ describe("Result Module", () => {
       severity: SEVERITY_LEVELS.FATAL,
       error: "Fatal error",
     };
-    const alertRes = {
+    const warningRes = {
       success: false,
-      severity: SEVERITY_LEVELS.ALERT,
-      error: "Alert error",
+      severity: SEVERITY_LEVELS.WARNING,
+      error: "Warning error",
     };
     const successRes = { success: true };
     expect(isFatal(fatalRes)).toBe(true);
-    expect(isFatal(alertRes)).toBe(false);
+    expect(isFatal(warningRes)).toBe(false);
     expect(isFatal(successRes)).toBe(false);
   });
 });

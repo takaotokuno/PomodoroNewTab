@@ -3,13 +3,41 @@ import { startTick, stopTick } from "./setup-alarms.js";
 import { notify } from "./notification.js";
 import { enableBlock, disableBlock } from "./sites-guard.js";
 import { handleSound } from "./sound-controller.js";
-import {
-  alertError,
-  fatalError,
-  normalizeResponse,
-  isFatal,
-} from "./result.js";
+import { createErrObject, normalizeResponse, isFatal } from "./result.js";
 import Constants from "../constants.js";
+
+/**
+ * Configuration for sub-module operations.
+ * Defines error handling strategy (fatal vs warning) for each operation type.
+ */
+const OPERATIONS = {
+  initTimer: { fn: initTimer, fatal: true },
+  saveSnapshot: { fn: saveSnapshot, fatal: false },
+  handleSound: { fn: handleSound, fatal: false },
+  enableBlock: { fn: enableBlock, fatal: true },
+  disableBlock: { fn: disableBlock, fatal: true },
+  startTick: { fn: startTick, fatal: true },
+  stopTick: { fn: stopTick, fatal: true },
+  notify: { fn: notify, fatal: false },
+};
+
+/**
+ * Creates a step object for an operation defined in OPERATIONS config.
+ * @param {string} operationName - Name of the operation in OPERATIONS
+ * @param {...any} args - Arguments to pass to the operation function
+ * @returns {Object} Step object with fn, name, and fatal properties
+ */
+function _onStep(operationName, ...args) {
+  const operation = OPERATIONS[operationName];
+  if (!operation) {
+    throw new Error(`Unknown operation: ${operationName}`);
+  }
+  return {
+    fn: async () => operation.fn(...args),
+    name: operationName,
+    fatal: operation.fatal,
+  };
+}
 
 /**
  * Main event handler that orchestrates timer initialization, event execution,
@@ -19,139 +47,143 @@ import Constants from "../constants.js";
  * @returns {Promise<Object>} Result object with success status and any errors
  */
 export async function handleEvents(type, payload = {}) {
-  const fn = events[type];
-  if (!fn) {
-    return fatalError(new Error(`Unknown event type: ${type}`));
+  const eventBuilder = EVENTS[type];
+  if (!eventBuilder) {
+    return createErrObject(new Error(`Unknown event type: ${type}`), true);
   }
 
-  const initRes = await _safeStep(() => initTimer(), {
-    name: "initTimer",
-    fatalOnError: true,
-  });
+  // Initialize timer first before getting it
+  const initRes = await _runStep(_onStep("initTimer"));
   if (isFatal(initRes)) return initRes;
 
-  const timer = getTimer();
-  const mainRes = normalizeResponse(await fn(payload, timer));
+  // Now safe to call eventBuilder which may use getTimer()
+  const mainRes = await eventBuilder(payload);
   if (isFatal(mainRes)) return mainRes;
 
-  const soundRes = await _safeStep(() => handleSound(), {
-    name: "handleSound",
-    fatalOnError: false,
-  });
-  if (isFatal(soundRes)) return soundRes;
+  const postSteps = [_onStep("handleSound"), _onStep("saveSnapshot")];
+  const postRes = await _runSteps(postSteps);
+  if (isFatal(postRes)) return postRes;
 
-  const saveRes = await _safeStep(() => saveSnapshot(), {
-    name: "saveSnapshot",
-    fatalOnError: false,
-  });
-  if (isFatal(saveRes)) return saveRes;
-
-  return _mergeResults(initRes, mainRes, soundRes, saveRes);
+  return _mergeResults(initRes, mainRes, postRes);
 }
 
 /**
- * Wraps a step function with error handling, converting exceptions to normalized results.
- * @param {Function} stepFn - Function to execute
- * @param {Object} options - Configuration options
- * @param {string} options.name - Step name for error logging
- * @param {boolean} options.fatalOnError - Whether to treat errors as fatal
+ * Executes a series of steps sequentially, handling errors according to each step's configuration.
+ * Returns immediately if a fatal error occurs.
+ * @param {Array<Object>} steps - Array of step objects
+ * @returns {Promise<Object>} Merged result of all steps
+ */
+async function _runSteps(steps) {
+  const results = [];
+
+  for (const step of steps) {
+    const res = await _runStep(step);
+    if (isFatal(res)) return res;
+    results.push(res);
+  }
+
+  return _mergeResults(...results);
+}
+
+/**
+ * Executes a single step with error handling.
+ * @param {Object} step - Step object with fn, name, and fatal properties
  * @returns {Promise<Object>} Normalized result object
  */
-async function _safeStep(stepFn, { name, fatalOnError }) {
+async function _runStep(step) {
   try {
-    const res = await stepFn();
+    const res = await step.fn();
     return normalizeResponse(res);
   } catch (e) {
-    return fatalOnError
-      ? fatalError(e, { step: name })
-      : alertError(e, { step: name });
+    return createErrObject(e, step.fatal);
   }
 }
 
-async function _enebleBlock() {
-  return await _safeStep(() => enableBlock(), {
-    name: "enableBlock",
-    fatalOnError: true,
-  });
+/**
+ * Creates a step for starting the timer with validation.
+ * @param {number} minutes - Timer duration in minutes
+ * @returns {Object} Step object
+ */
+function _startTimerStep(minutes) {
+  return {
+    fn: () => {
+      if (minutes === undefined || minutes === null) {
+        throw new Error("Invalid minutes: parameter is required");
+      }
+      if (typeof minutes !== "number" || isNaN(minutes)) {
+        throw new Error("Invalid minutes: must be a number");
+      }
+      if (minutes < Constants.DURATIONS.MIN_TOTAL_MINUTES) {
+        throw new Error(
+          `Invalid minutes: must be at least ${Constants.DURATIONS.MIN_TOTAL_MINUTES}`
+        );
+      }
+      if (minutes > Constants.DURATIONS.MAX_TOTAL_MINUTES) {
+        throw new Error(
+          `Invalid minutes: must be at most ${Constants.DURATIONS.MAX_TOTAL_MINUTES}`
+        );
+      }
+      getTimer().start(minutes);
+      return { success: true };
+    },
+    name: "startTimer",
+    fatal: true,
+  };
 }
 
-async function _disableBlock() {
-  return await _safeStep(() => disableBlock(), {
-    name: "disableBlock",
-    fatalOnError: true,
-  });
-}
-
-async function _startTick() {
-  return await _safeStep(() => startTick(), {
-    name: "startTick",
-    fatalOnError: true,
-  });
-}
-
-async function _stopTick() {
-  return await _safeStep(() => stopTick(), {
-    name: "stopTick",
-    fatalOnError: true,
-  });
+/**
+ * Creates a step for saving sound settings.
+ * @param {boolean} isEnabled - Whether sound is enabled
+ * @returns {Object} Step object
+ */
+function _saveSoundStep(isEnabled) {
+  return {
+    fn: () => {
+      if (isEnabled === undefined || isEnabled === null) {
+        throw new Error("Invalid isEnabled: parameter is required");
+      }
+      const soundEnabled = Boolean(isEnabled);
+      getTimer().soundEnabled = soundEnabled;
+      return { soundEnabled };
+    },
+    name: "saveSound",
+    fatal: true,
+  };
 }
 
 /**
  * Events for handling messages from UI/content scripts.
- * Each key is a message type, mapped to a function that mutates or queries TimerState.
+ * Each event is defined as a function that returns a result or executes steps.
  */
-const events = {
-  "timer/start": async ({ minutes }, timer) => {
-    if (minutes === undefined || minutes === null) {
-      throw new Error("Invalid minutes: parameter is required");
-    }
-    if (typeof minutes !== "number" || isNaN(minutes)) {
-      throw new Error("Invalid minutes: must be a number");
-    }
-    if (minutes < Constants.DURATIONS.MIN_TOTAL_MINUTES) {
-      throw new Error(
-        `Invalid minutes: must be at least ${Constants.DURATIONS.MIN_TOTAL_MINUTES}`
-      );
-    }
-    if (minutes > Constants.DURATIONS.MAX_TOTAL_MINUTES) {
-      throw new Error(
-        `Invalid minutes: must be at most ${Constants.DURATIONS.MAX_TOTAL_MINUTES}`
-      );
-    }
-
-    timer.start(minutes);
-    const blockRes = await _enebleBlock();
-    if (isFatal(blockRes)) return blockRes;
-
-    const alarmsRes = await _startTick();
-    if (isFatal(alarmsRes)) return alarmsRes;
-
-    return _mergeResults(blockRes, alarmsRes);
+const EVENTS = {
+  "timer/start": async (payload) => {
+    const { minutes } = payload;
+    const steps = [
+      _startTimerStep(minutes),
+      _onStep("enableBlock"),
+      _onStep("startTick"),
+    ];
+    return await _runSteps(steps);
   },
-  "timer/pause": async (_, timer) => {
-    timer.pause();
-    const alarmsRes = await _stopTick();
-    return alarmsRes;
+  "timer/pause": async () => {
+    getTimer().pause();
+    return await _runSteps([_onStep("stopTick")]);
   },
-  "timer/resume": async (_, timer) => {
-    timer.resume();
-    const alarmsRes = await _startTick();
-    return alarmsRes;
+  "timer/resume": async () => {
+    getTimer().resume();
+    return await _runSteps([_onStep("startTick")]);
   },
-  "timer/reset": async (_, timer) => {
-    timer.reset();
-    const blockRes = await _disableBlock();
-    if (isFatal(blockRes)) return blockRes;
-    const alarmsRes = await _stopTick();
-    if (isFatal(alarmsRes)) return alarmsRes;
-
-    return _mergeResults(blockRes, alarmsRes);
+  "timer/reset": async () => {
+    getTimer().reset();
+    const steps = [_onStep("disableBlock"), _onStep("stopTick")];
+    return await _runSteps(steps);
   },
-  "timer/update": async (_, timer) => {
+  "timer/update": async () => {
+    const timer = getTimer();
     const res = timer.update();
-    const result = await _handleSwitch(res);
+    const switchRes = await _handleSwitch(res);
     return {
-      ...result,
+      ...switchRes,
       mode: timer.mode,
       totalRemaining: timer.getTotalRemaining(),
       sessionType: timer.sessionType,
@@ -159,14 +191,10 @@ const events = {
       soundEnabled: timer.soundEnabled,
     };
   },
-  "sound/save": async ({ isEnabled }, timer) => {
-    // 防御的プログラミング: isEnabled パラメータの検証
-    if (isEnabled === undefined || isEnabled === null) {
-      throw new Error("Invalid isEnabled: parameter is required");
-    }
-    const soundEnabled = Boolean(isEnabled);
-    timer.soundEnabled = soundEnabled;
-    return { soundEnabled: timer.soundEnabled };
+  "sound/save": async (payload) => {
+    const { isEnabled } = payload;
+    const step = _saveSoundStep(isEnabled);
+    return await _runStep(step);
   },
 };
 
@@ -178,48 +206,39 @@ const events = {
  *   using currentSessionType after the switch.
  */
 async function _handleSwitch(res) {
-  if (!res) return;
+  if (!res) return { success: true };
+
+  const steps = [];
 
   if (res.mode === Constants.TIMER_MODES.COMPLETED) {
-    const notifyRes = await _safeStep(
-      () =>
-        notify({
-          id: "complete" + Date.now(),
-          title: "ポモドーロ完了",
-          message: "お疲れ様！また頑張ろう",
-        }),
-      { name: "notify", fatalOnError: false }
+    const notification = {
+      id: "complete" + Date.now(),
+      title: "ポモドーロ完了",
+      message: "お疲れ様！また頑張ろう",
+    };
+
+    steps.push(
+      _onStep("notify", notification),
+      _onStep("disableBlock"),
+      _onStep("stopTick")
     );
-
-    const blockRes = await _disableBlock();
-    if (isFatal(blockRes)) return blockRes;
-
-    const alarmsRes = await _stopTick();
-    if (isFatal(alarmsRes)) return alarmsRes;
-
-    return _mergeResults(notifyRes, blockRes, alarmsRes);
   } else if (res.isSessionComplete) {
     const isWork = res.sessionType === Constants.SESSION_TYPES.WORK;
-    const notifyRes = await _safeStep(
-      () =>
-        notify({
-          id: "switch" + Date.now(),
-          title: isWork ? "作業開始！" : "休憩開始",
-          message: isWork
-            ? "SNSをブロックしたよ。作業に集中しよう"
-            : "ブロックを解除したよ。肩の力を抜こう",
-        }),
-      { name: "notify", fatalOnError: false }
-    );
+    const notification = {
+      id: "switch" + Date.now(),
+      title: isWork ? "作業開始！" : "休憩開始",
+      message: isWork
+        ? "SNSをブロックしたよ。作業に集中しよう"
+        : "ブロックを解除したよ。肩の力を抜こう",
+    };
 
-    if (isWork) {
-      const blockRes = await _enebleBlock();
-      return _mergeResults(notifyRes, blockRes);
-    } else {
-      const blockRes = await _disableBlock();
-      return _mergeResults(notifyRes, blockRes);
-    }
+    steps.push(
+      _onStep("notify", notification),
+      isWork ? _onStep("enableBlock") : _onStep("disableBlock")
+    );
   }
+
+  return await _runSteps(steps);
 }
 
 /**
@@ -241,7 +260,7 @@ function _mergeResults(...results) {
       ...merged,
       success: false,
       severity: Constants.SEVERITY_LEVELS.WARNING,
-      warnings: warnings.map((w) => w.error),
+      error: warnings.map((w) => w.error).join("\n"),
     };
   }
 

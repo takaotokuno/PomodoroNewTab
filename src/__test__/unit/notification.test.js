@@ -51,39 +51,29 @@ describe("Notification", () => {
       );
     });
 
-    test("should return success result when notification is created", async () => {
+    test("should complete successfully when notification is created", async () => {
       const mockNotificationId = "created-notification-id";
       chromeMock.notifications.create.mockResolvedValue(mockNotificationId);
 
-      const result = await notify(mockPayload);
-
-      expect(result).toEqual({ success: true });
+      await expect(notify(mockPayload)).resolves.toBeUndefined();
     });
 
-    test("should handle chrome.runtime.getURL errors", async () => {
+    test("should throw error when chrome.runtime.getURL fails", async () => {
       chromeMock.runtime.getURL.mockImplementationOnce(() => {
         throw new Error("Runtime getURL error");
       });
 
-      const result = await notify(mockPayload);
-
-      expect(result).toEqual({
-        success: false,
-        error: "Failed to show notification: Runtime getURL error",
-      });
+      await expect(notify(mockPayload)).rejects.toThrow("Runtime getURL error");
     });
 
-    test("should handle chrome.notifications.create errors", async () => {
+    test("should throw error when chrome.notifications.create fails", async () => {
       chromeMock.notifications.create.mockRejectedValueOnce(
         new Error("Notification creation failed")
       );
 
-      const result = await notify(mockPayload);
-
-      expect(result).toEqual({
-        success: false,
-        error: "Failed to show notification: Notification creation failed",
-      });
+      await expect(notify(mockPayload)).rejects.toThrow(
+        "Notification creation failed"
+      );
     });
 
     test("should handle missing id parameter", async () => {

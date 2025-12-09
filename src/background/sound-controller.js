@@ -4,26 +4,25 @@ const { TIMER_MODES, SESSION_TYPES } = Constants;
 
 let isPlaying = false;
 
+/**
+ * Handle sound playback based on timer state
+ * @throws {Error} If sound control fails
+ */
 export async function handleSound() {
-  try {
-    let timer = getTimer();
+  let timer = getTimer();
 
-    if (
-      !timer.soundEnabled ||
-      timer.mode !== TIMER_MODES.RUNNING ||
-      timer.sessionType !== SESSION_TYPES.WORK
-    ) {
-      await stopAudio();
-      return;
-    }
-
-    if (isPlaying) return;
-
-    await playAudio();
-  } catch (error) {
-    console.error("Sound error (timer continues):", error.message);
-    return { success: false, error: error.message };
+  if (
+    !timer.soundEnabled ||
+    timer.mode !== TIMER_MODES.RUNNING ||
+    timer.sessionType !== SESSION_TYPES.WORK
+  ) {
+    await stopAudio();
+    return;
   }
+
+  if (isPlaying) return;
+
+  await playAudio();
 }
 
 export async function playAudio() {

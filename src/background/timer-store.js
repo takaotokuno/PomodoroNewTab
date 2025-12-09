@@ -27,17 +27,14 @@ export function getTimer() {
 /**
  * Save the current timer state snapshot into chrome.storage.
  * Does nothing if the instance is missing or invalid.
+ * @throws {Error} If saving to storage fails
  */
 export async function saveSnapshot() {
   console.log("Saving timer state snapshot");
   if (!timer.instance) return;
-  try {
-    await chrome.storage.local.set({
-      [SNAPSHOT_KEY]: timer.instance.toSnapshot(),
-    });
-  } catch (e) {
-    return { success: false, error: e.message };
-  }
+  await chrome.storage.local.set({
+    [SNAPSHOT_KEY]: timer.instance.toSnapshot(),
+  });
 }
 
 /**

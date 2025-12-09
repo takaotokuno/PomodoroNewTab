@@ -130,7 +130,7 @@ describe("SitesGuard", () => {
       expect(chromeMock.tabs.remove).toHaveBeenCalledWith(2);
     });
 
-    test("should handle tab reload errors gracefully", async () => {
+    test("should throw error when tab operations fail", async () => {
       const mockTabs = [
         { id: 1, url: "https://twitter.com/home" },
         { id: 2, url: "https://facebook.com/feed" },
@@ -146,11 +146,9 @@ describe("SitesGuard", () => {
         new Error("Tab already closed")
       );
 
-      await expect(enableBlock()).resolves.toEqual({
-        success: false,
-        severity: "warning",
-        error: "Failed to process 2 out of 2 SNS tabs",
-      });
+      await expect(enableBlock()).rejects.toThrow(
+        "Failed to process 2 out of 2 SNS tabs"
+      );
 
       expect(chromeMock.tabs.reload).toHaveBeenCalledTimes(1);
       expect(chromeMock.tabs.remove).toHaveBeenCalledTimes(1);
@@ -189,40 +187,30 @@ describe("SitesGuard", () => {
   });
 
   describe("error handling", () => {
-    test("enableBlock should handle declarativeNetRequest errors", async () => {
+    test("enableBlock should throw error when declarativeNetRequest fails", async () => {
       chromeMock.declarativeNetRequest.updateDynamicRules.mockRejectedValue(
         new Error("Permission denied")
       );
 
-      await expect(enableBlock()).resolves.toEqual({
-        success: false,
-        severity: "fatal",
-        error: "Failed to enable blocking rules: Permission denied",
-      });
+      await expect(enableBlock()).rejects.toThrow("Permission denied");
     });
 
-    test("disableBlock should handle declarativeNetRequest errors", async () => {
+    test("disableBlock should throw error when declarativeNetRequest fails", async () => {
       chromeMock.declarativeNetRequest.updateDynamicRules.mockRejectedValue(
         new Error("Permission denied")
       );
 
-      await expect(disableBlock()).resolves.toEqual({
-        success: false,
-        severity: "fatal",
-        error: "Failed to disable blocking rules: Permission denied",
-      });
+      await expect(disableBlock()).rejects.toThrow("Permission denied");
     });
 
-    test("enableBlock should handle tabs.query errors", async () => {
+    test("enableBlock should throw error when tabs.query fails", async () => {
       chromeMock.tabs.query.mockRejectedValue(
         new Error("Tabs permission denied")
       );
 
-      await expect(enableBlock()).resolves.toEqual({
-        success: false,
-        severity: "warning",
-        error: "Failed to query tabs: Tabs permission denied",
-      });
+      await expect(enableBlock()).rejects.toThrow(
+        "Failed to query tabs: Tabs permission denied"
+      );
     });
 
     test("enableBlock should handle active tab query errors gracefully", async () => {

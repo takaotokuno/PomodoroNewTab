@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
-import { enableBlock, disableBlock } from "@/background/sites-guard.js";
 import { handleEvents } from "@/background/events.js";
 import { initTimer, getTimer } from "@/background/timer-store.js";
 
@@ -61,34 +60,6 @@ describe("SNS Blocking Integration", () => {
         ]),
       });
     });
-
-    it("should create blocking rules for all target SNS sites", async () => {
-      await enableBlock();
-
-      const call =
-        chromeMock.declarativeNetRequest.updateDynamicRules.mock.calls[0][0];
-      const rules = call.addRules;
-
-      // Verify rules are created for major SNS sites
-      const expectedDomains = [
-        "x.com",
-        "twitter.com",
-        "instagram.com",
-        "facebook.com",
-        "tiktok.com",
-        "youtube.com",
-        "reddit.com",
-        "pixiv.net",
-        "nicovideo.jp",
-      ];
-
-      expectedDomains.forEach((domain) => {
-        const ruleExists = rules.some((rule) =>
-          rule.condition.urlFilter.includes(domain)
-        );
-        expect(ruleExists).toBe(true);
-      });
-    });
   });
 
   describe("Active vs Inactive Tab Handling", () => {
@@ -105,7 +76,7 @@ describe("SNS Blocking Integration", () => {
         .mockResolvedValueOnce(mockTabs) // First call for SNS tabs
         .mockResolvedValueOnce([mockTabs[0]]); // Second call for active tab
 
-      await enableBlock();
+      await handleEvents("timer/start", { minutes: 25 });
 
       // Verify that the active tab (id: 1) was reloaded
       expect(chromeMock.tabs.reload).toHaveBeenCalledWith(1);
@@ -128,7 +99,7 @@ describe("SNS Blocking Integration", () => {
         .mockResolvedValueOnce(mockTabs) // First call for SNS tabs
         .mockResolvedValueOnce([mockTabs[1]]); // Second call for active tab
 
-      await enableBlock();
+      await handleEvents("timer/start", { minutes: 25 });
 
       // Verify that the active tab (id: 2) was reloaded
       expect(chromeMock.tabs.reload).toHaveBeenCalledWith(2);
@@ -151,7 +122,7 @@ describe("SNS Blocking Integration", () => {
         .mockResolvedValueOnce(mockTabs) // First call for SNS tabs
         .mockResolvedValueOnce([]); // Second call for active tab (empty)
 
-      await enableBlock();
+      await handleEvents("timer/start", { minutes: 25 });
 
       // When no active tab is found, all tabs should be closed
       expect(chromeMock.tabs.remove).toHaveBeenCalledWith(1);
@@ -176,8 +147,13 @@ describe("SNS Blocking Integration", () => {
       chromeMock.tabs.reload.mockRejectedValue(new Error("No tab with id: 1"));
       chromeMock.tabs.remove.mockRejectedValue(new Error("No tab with id: 2"));
 
-      // Should not throw error despite tab operation failures
-      await expect(enableBlock()).resolves.not.toThrow();
+      // Tab operation errors should not prevent timer from starting
+      // but should be logged as warnings
+      const result = await handleEvents("timer/start", { minutes: 25 });
+
+      // Timer should still start despite tab errors
+      const timer = getTimer();
+      expect(timer.mode).toBe("running");
     });
   });
 
@@ -263,32 +239,32 @@ describe("SNS Blocking Integration", () => {
     });
   });
 
-  describe("Error Handling", () => {
-    it("should handle declarativeNetRequest API failures", async () => {
+  describe("Error Handling through events", () => {
+    it("should return fatal error when declarativeNetRequest API fails", async () => {
       chromeMock.declarativeNetRequest.updateDynamicRules.mockRejectedValue(
         new Error("Extension context invalidated")
       );
 
-      await expect(enableBlock()).resolves.toEqual({
-        success: false,
-        severity: "fatal",
-        error: "Failed to enable blocking rules: Extension context invalidated",
-      });
+      const result = await handleEvents("timer/start", { minutes: 25 });
+
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe("fatal");
+      expect(result.error).toContain("Extension context invalidated");
     });
 
-    it("should handle tabs.query permission errors", async () => {
+    it("should return fatal error when tabs.query permission fails", async () => {
       chromeMock.tabs.query.mockRejectedValue(
         new Error("Cannot access chrome://newtab/")
       );
 
-      await expect(enableBlock()).resolves.toEqual({
-        success: false,
-        severity: "warning",
-        error: "Failed to query tabs: Cannot access chrome://newtab/",
-      });
+      const result = await handleEvents("timer/start", { minutes: 25 });
+
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe("fatal");
+      expect(result.error).toContain("Failed to query tabs");
     });
 
-    it("should continue processing other tabs when individual operations fail", async () => {
+    it("should return fatal error when individual tab operations fail", async () => {
       const mockTabs = [
         { id: 1, url: "https://twitter.com/home" },
         { id: 2, url: "https://facebook.com/feed" },
@@ -306,8 +282,12 @@ describe("SNS Blocking Integration", () => {
         .mockResolvedValueOnce(undefined) // Tab 2 closes successfully
         .mockResolvedValueOnce(undefined); // Tab 3 closes successfully
 
-      // Should not throw despite one tab operation failing
-      await expect(enableBlock()).resolves.not.toThrow();
+      const result = await handleEvents("timer/start", { minutes: 25 });
+
+      // Should return fatal error
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe("fatal");
+      expect(result.error).toContain("Failed to process 1 out of 3 SNS tabs");
 
       // Verify other tabs were still processed
       expect(chromeMock.tabs.remove).toHaveBeenCalledWith(2);

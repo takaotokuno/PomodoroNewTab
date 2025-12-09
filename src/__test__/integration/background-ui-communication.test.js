@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setupChromeMock } from "../setup.chrome.js";
 import { BGClient } from "@/ui/bg-client.js";
+import Constants from "@/constants.js";
 
 // Import background modules to test integration
 import { handleEvents } from "@/background/events.js";
@@ -193,16 +194,21 @@ describe("Background-UI Communication Integration", () => {
       expect(timer.sessionType).toBe("work");
     });
 
-    it("should throw error for invalid minutes in timer/start event", async () => {
-      await expect(handleEvents("timer/start", { minutes: 0 })).rejects.toThrow(
-        "Invalid minutes"
-      );
-      await expect(
-        handleEvents("timer/start", { minutes: -5 })
-      ).rejects.toThrow("Invalid minutes");
-      await expect(handleEvents("timer/start", {})).rejects.toThrow(
-        "Invalid minutes"
-      );
+    it("should return fatal error for invalid minutes in timer/start event", async () => {
+      const result1 = await handleEvents("timer/start", { minutes: 0 });
+      expect(result1.success).toBe(false);
+      expect(result1.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result1.error).toContain("Invalid minutes");
+
+      const result2 = await handleEvents("timer/start", { minutes: -5 });
+      expect(result2.success).toBe(false);
+      expect(result2.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result2.error).toContain("Invalid minutes");
+
+      const result3 = await handleEvents("timer/start", {});
+      expect(result3.success).toBe(false);
+      expect(result3.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result3.error).toContain("Invalid minutes");
     });
 
     it("should execute timer/pause event correctly", async () => {

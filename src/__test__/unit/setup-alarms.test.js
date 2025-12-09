@@ -178,36 +178,28 @@ describe("SetupAlarms", () => {
       });
     });
 
-    test("should handle chrome.alarms.create errors", () => {
+    test("should throw error when chrome.alarms.create fails", () => {
       chromeMock.alarms.create.mockImplementationOnce(() => {
         throw new Error("Alarm creation failed");
       });
 
-      expect(startTick()).toEqual({
-        success: false,
-        severity: "fatal",
-        error: "Failed to create alarm: Alarm creation failed",
-      });
+      expect(() => startTick()).toThrow("Alarm creation failed");
     });
   });
 
   describe("stopTick()", () => {
-    test("should clear the repeating alarm", () => {
-      stopTick();
+    test("should clear the repeating alarm", async () => {
+      await stopTick();
 
       expect(chromeMock.alarms.clear).toHaveBeenCalledWith(TICK);
     });
 
-    test("should handle chrome.alarms.clear errors", () => {
-      chromeMock.alarms.clear.mockImplementationOnce(() => {
-        throw new Error("Alarm clear failed");
-      });
+    test("should throw error when chrome.alarms.clear fails", async () => {
+      chromeMock.alarms.clear.mockRejectedValueOnce(
+        new Error("Alarm clear failed")
+      );
 
-      expect(stopTick()).resolves.toEqual({
-        success: false,
-        severity: "fatal",
-        error: "Failed to clear alarm: Alarm clear failed",
-      });
+      await expect(stopTick()).rejects.toThrow("Alarm clear failed");
     });
   });
 });
