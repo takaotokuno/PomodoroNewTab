@@ -38,8 +38,6 @@ vi.mock("@/ui/bg-client.js", () => ({
 }));
 
 describe("UI", () => {
-  let chromeMock = setupChromeMock();
-
   // Mock DOM elements
   const mockElements = {
     "setup-screen": { style: { display: "none" } },
@@ -52,7 +50,6 @@ describe("UI", () => {
     "reset-button": { addEventListener: vi.fn() },
     "completed-screen": { style: { display: "none" } },
     "time-display": {},
-    "completed-screen": { style: { display: "none" } },
     "new-session-button": { addEventListener: vi.fn() },
   };
 
@@ -80,7 +77,7 @@ describe("UI", () => {
     Object.values(mockElements).forEach((element) => {
       if (element.style) element.style.display = "none";
       if (element.addEventListener) element.addEventListener.mockClear();
-      if (element.hasOwnProperty("checked")) element.checked = false;
+      if (Object.prototype.hasOwnProperty.call(element,"checked")) element.checked = false;
     });
   });
 

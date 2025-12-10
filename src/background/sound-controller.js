@@ -3,6 +3,7 @@ import Constants from "../constants.js";
 const { TIMER_MODES, SESSION_TYPES } = Constants;
 
 let isPlaying = false;
+let initPromise = null;
 
 /**
  * Handle sound playback based on timer state
@@ -64,6 +65,8 @@ async function sendAudioMessage(action, options = {}) {
   };
 
   try {
+    await ensureOffscreen();
+    
     const res = await chrome.runtime.sendMessage(message);
     if (!res?.success) throw new Error(res?.error || "Offscreen error");
     return res;
@@ -72,19 +75,36 @@ async function sendAudioMessage(action, options = {}) {
   }
 }
 
-export async function setupSound() {
-  try {
-    // if offscreen document already exists, do nothing
+/**
+ * Offscreen documentが存在することを確認し、なければ作成
+ */
+async function ensureOffscreen() {
+  if(initPromise) return initPromise;
+
+  initPromise = (async () => {
     const contexts = await chrome.runtime.getContexts({
       contextTypes: ["OFFSCREEN_DOCUMENT"],
     });
-    if (contexts.length > 0) return;
+    
+    if (contexts.length === 0) {
+      await chrome.offscreen.createDocument({
+        url: "src/offscreen/offscreen.html",
+        reasons: ["AUDIO_PLAYBACK"],
+        justification: "Playing background audio for pomodoro timer",
+      });
+    }
+  })();
 
-    await chrome.offscreen.createDocument({
-      url: "src/offscreen/offscreen.html",
-      reasons: ["AUDIO_PLAYBACK"],
-      justification: "Playing background audio for pomodoro timer",
-    });
+  try {
+    await initPromise;
+  } finally {
+    initPromise = null;
+  }
+}
+
+export async function setupSound() {
+  try {
+    await ensureOffscreen();
   } catch (error) {
     console.warn("Failed to setup sound:", error.message);
   }
