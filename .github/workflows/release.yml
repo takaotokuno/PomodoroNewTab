@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-beta.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm ci
+
+      - id: build_chrome
+        run: npm run build:chrome
+      
+      - id: build_edge
+        run: npm run build:edge
+
+      - id: package_chrome
+        run: npm run package:chrome
+      
+      - id: package_edge
+        run: npm run package:edge
+
+      - id: publish_chrome
+        run: npm run publish:chrome
+
+      - id: publich_edge
+        run: npm run publish:edge

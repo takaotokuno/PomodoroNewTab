@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm ci
+
+      - id: build_chrome
+        run: npm run build:chrome
+      
+      - id: build_edge
+        run: npm run build:edge
+
+      - id: pachage
+        run: npm run pachage
+      
+      - id: upload_chrome
+        uses: actions/upload-artifact@v4
+        with:
+          name: pomodoro-new-tab-chrome-${{ github.sha }}
+          path: dist/packages/pomodoro-new-tab-chrome-*.zip
+          retention-days: 3
+
+      - id: upload_edge
+        uses: actions/upload-artifact@v4
+        with:
+          name: pomodoro-new-tab-edge-${{ github.sha }}
+          path: dist/packages/pomodoro-new-tab-edge-*.zip
+          retention-days: 3
