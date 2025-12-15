@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { createZip } from "./config/zip-utils.js";
+import { createZip } from "./utils/zip-utils.js";
 
 async function packageExtension() {
   const inputDir = "dist/latest";
