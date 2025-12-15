@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
+    "node-fetch": "^3.3.2",
     "picomatch": "^4.0.3"
   }
 }
