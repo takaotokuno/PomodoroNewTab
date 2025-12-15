@@ -66,7 +66,7 @@ async function sendAudioMessage(action, options = {}) {
 
   try {
     await ensureOffscreen();
-    
+
     const res = await chrome.runtime.sendMessage(message);
     if (!res?.success) throw new Error(res?.error || "Offscreen error");
     return res;
@@ -79,13 +79,13 @@ async function sendAudioMessage(action, options = {}) {
  * Offscreen documentが存在することを確認し、なければ作成
  */
 async function ensureOffscreen() {
-  if(initPromise) return initPromise;
+  if (initPromise) return initPromise;
 
   initPromise = (async () => {
     const contexts = await chrome.runtime.getContexts({
       contextTypes: ["OFFSCREEN_DOCUMENT"],
     });
-    
+
     if (contexts.length === 0) {
       await chrome.offscreen.createDocument({
         url: "src/offscreen/offscreen.html",

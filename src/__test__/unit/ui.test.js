@@ -76,7 +76,8 @@ describe("UI", () => {
     Object.values(mockElements).forEach((element) => {
       if (element.style) element.style.display = "none";
       if (element.addEventListener) element.addEventListener.mockClear();
-      if (Object.prototype.hasOwnProperty.call(element,"checked")) element.checked = false;
+      if (Object.prototype.hasOwnProperty.call(element, "checked"))
+        element.checked = false;
     });
   });
 

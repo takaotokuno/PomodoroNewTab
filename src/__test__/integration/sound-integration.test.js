@@ -180,7 +180,9 @@ describe("Sound Integration - handleEvents Flow", () => {
       // Result should indicate warning (non-fatal error)
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.WARNING);
-      expect(result.error).toContain("Failed to send audio message: Sound error");
+      expect(result.error).toContain(
+        "Failed to send audio message: Sound error"
+      );
     });
 
     test("should handle sound error during pause", async () => {

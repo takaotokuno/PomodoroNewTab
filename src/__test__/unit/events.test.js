@@ -189,7 +189,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with minutes below minimum', async () => {
       const result = await handleEvents("timer/start", { minutes: 4 });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be at least 5");
@@ -197,7 +197,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with minutes above maximum', async () => {
       const result = await handleEvents("timer/start", { minutes: 301 });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be at most 300");
@@ -205,7 +205,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called without minutes', async () => {
       const result = await handleEvents("timer/start", {});
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: parameter is required");
@@ -213,7 +213,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with non-number minutes', async () => {
       const result = await handleEvents("timer/start", { minutes: "25" });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be a number");
@@ -221,7 +221,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with NaN', async () => {
       const result = await handleEvents("timer/start", { minutes: NaN });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be a number");
@@ -378,10 +378,12 @@ describe("Events", () => {
 
     test('should return fatal error when "sound/save" is called without isEnabled', async () => {
       const result = await handleEvents("sound/save", {});
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("Invalid isEnabled: parameter is required");
+      expect(result.error).toContain(
+        "Invalid isEnabled: parameter is required"
+      );
     });
   });
 
@@ -495,7 +497,9 @@ describe("Events", () => {
         expect.objectContaining({
           success: false,
           severity: Constants.SEVERITY_LEVELS.WARNING,
-          error: expect.stringMatching(/Sound failed[\s\S]*Save failed|Save failed[\s\S]*Sound failed/),
+          error: expect.stringMatching(
+            /Sound failed[\s\S]*Save failed|Save failed[\s\S]*Sound failed/
+          ),
         })
       );
     });
