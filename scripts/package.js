@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import { createZip } from "./config/zip-utils.js";
 
-async function pachageExtension() {
+async function packageExtension() {
   const inputDir = "dist/latest";
   const outputDir = "dist/packages";
   try {
@@ -21,4 +21,4 @@ async function pachageExtension() {
   }
 }
 
-pachageExtension();
+packageExtension();
