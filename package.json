@@ -17,6 +17,8 @@
     "prepare": "husky install",
     "build": "node scripts/build.js",
     "package": "node scripts/package.js",
+    "tag": "node scripts/tag.js",
+    "tag:beta": "node scripts/tag.js --beta",
     "publish:chrome": "node scripts/publish-chrome.js",
     "publish:edge": "node scripts/publish-edge.js"
   },
