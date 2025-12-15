@@ -4,9 +4,9 @@ import {
   cleanDirectory,
   copyFile,
   copyDirectory,
-} from "./config/file-utils.js";
+} from "./utils/file-utils.js";
 
-async function build() {
+async function buildExtension() {
   const outputDir = buildConfig.baseDir;
 
   try {
@@ -34,4 +34,4 @@ async function build() {
   }
 }
 
-build();
+buildExtension();
