@@ -11,7 +11,7 @@ async function pachageExtension() {
 
     const zipFileName = `${name}-v${version}.zip`;
     const zipFilePath = `${outputDir}/${zipFileName}`;
-    await createZip("dist/extension", zipFilePath);
+    await createZip(outputDir, zipFilePath);
   } catch (e) {
     console.error("Packaging Failed:", e);
     process.exit(1);
