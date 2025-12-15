@@ -6,32 +6,27 @@ import {
   copyDirectory,
 } from "./config/file-utils.js";
 
-async function buildChrome() {
-  const arg = process.argv.find((arg) => arg.startsWith("--browser="));
-  const browser = arg ? arg.split("=")[1] : "chrome";
-
-  const browserConfig = buildConfig[browser];
-  const commonConfig = buildConfig.common;
-  const outputDir = browserConfig.outputDir;
+async function build() {
+  const outputDir = buildConfig.baseDir;
 
   try {
     await cleanDirectory(outputDir);
 
     await copyDirectory(
-      commonConfig.sourceDir,
-      path.join(outputDir, "src"),
-      commonConfig.excludePatterns
+      buildConfig.sourceDir,
+      path.join(outputDir, buildConfig.sourceDir),
+      buildConfig.excludePatterns
     );
 
     await copyDirectory(
-      commonConfig.resourcesDir,
-      path.join(outputDir, "resources"),
-      commonConfig.excludePatterns
+      buildConfig.resourcesDir,
+      path.join(outputDir, buildConfig.resourcesDir),
+      buildConfig.excludePatterns
     );
 
     await copyFile(
-      commonConfig.manifestFile,
-      path.join(outputDir, commonConfig.manifestFile)
+      buildConfig.manifestFile,
+      path.join(outputDir, buildConfig.manifestFile)
     );
   } catch (e) {
     console.error("Build Failed:", e);
@@ -39,4 +34,4 @@ async function buildChrome() {
   }
 }
 
-buildChrome();
+build();
