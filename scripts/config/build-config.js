@@ -21,4 +21,3 @@ export const buildConfig = {
     excludePatterns: ["**/__test__/**", "**/*.test.js", "coverage/**"],
   },
 };
-
