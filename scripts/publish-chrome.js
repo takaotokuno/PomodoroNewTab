@@ -3,6 +3,7 @@ import fs from "fs";
 
 class ChromePublisher {
   constructor() {
+    this.isBeta = process.env.IS_BETA === "true";
     this.cliendtId = process.env.CHROME_CLIENT_ID;
     this.clientSecret = process.env.CHROME_CLIENT_SECRET;
     this.refreshToken = process.env.CHROME_REFRESH_TOKEN;
