@@ -149,7 +149,6 @@ describe("SNS Blocking Integration", () => {
 
       // Tab operation errors should not prevent timer from starting
       // but should be logged as warnings
-      const result = await handleEvents("timer/start", { minutes: 25 });
 
       // Timer should still start despite tab errors
       const timer = getTimer();

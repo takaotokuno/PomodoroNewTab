@@ -14,20 +14,24 @@
     "lint:fix": "eslint . --ext .js,.jsx --fix",
     "format": "prettier --write \"**/*.{js,jsx,json,css,md}\"",
     "prepare": "husky install",
-    "build:chrome": "node scripts/build-chrome.js",
-    "build:edge": "node scripts/build-edge.js",
-    "package:chrome": "node scripts/package-chrome.js",
-    "package:edge": "node scripts/package-edge.js",
+    "build:chrome": "node scripts/build.js --browser=chrome",
+    "build:edge": "node scripts/build.js --browser=edge",
+    "package:chrome": "node scripts/package.js --browser=chrome",
+    "package:edge": "node scripts/package.js --browser=edge",
     "publish:chrome": "node scripts/publish-chrome.js",
     "publish:edge": "node scripts/publish-edge.js"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^2.0.0",
     "eslint": "^8.36.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",
+    "husky": "9.1.7",
     "prettier": "^2.8.8",
-    "vitest": "^2.0.0",
-    "@vitest/coverage-v8": "^2.0.0",
-    "husky": "9.1.7"
+    "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "picomatch": "^4.0.3"
   }
 }
