@@ -1,5 +1,5 @@
 export const buildConfig = {
-  baseDir: "dist",
+  baseDir: "dist/latest",
   sourceDir: "src",
   resourcesDir: "resources",
   manifestVersion: 3,
