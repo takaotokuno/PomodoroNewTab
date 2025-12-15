@@ -8,6 +8,7 @@
     "test:unit": "vitest run unit",
     "test:integration": "vitest run integration",
     "test:e2e": "vitest run e2e",
+    "test:scripts": "vitest run scripts",
     "test:watch": "vitest --watch",
     "test:ci": "vitest --run",
     "lint": "eslint . --ext .js,.jsx",

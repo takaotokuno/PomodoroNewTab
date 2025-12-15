@@ -14,16 +14,19 @@ const version = packageJson.version;
 
 const tagName = isBeta ? `v${version}-beta` : `v${version}`;
 
-// タグが既に存在するかチェック
+let exists = false;
 try {
   execSync(`git rev-parse ${tagName}`, { stdio: "ignore" });
-  console.error(`タグ '${tagName}' は既に存在します。`);
-  process.exit(1);
+  exists = true;
 } catch {
-  // タグが存在しない場合は続行
+  // empty
 }
 
-const message = isBeta ? `Release ${tagName} (Beta)` : `Release ${tagName}`;
-execSync(`git tag -a ${tagName} -m "${message}"`);
+if (exists) {
+  console.error(`タグ '${tagName}' は既に存在します。`);
+  process.exit(1);
+}
+
+execSync(`git tag -a ${tagName} -m "Release ${tagName}"`);
 
 console.log(`タグ '${tagName}' を作成しました。`);
