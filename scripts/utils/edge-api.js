@@ -21,7 +21,7 @@ export class EdgeApi {
 
     console.log(`Uploading package to Edge Add-ons: ${zipFilePath}`);
     const response = await fetch(uploadUrl, {
-      method: "PUT",
+      method: "POST",
       headers: {
         Authorization: `ApiKey ${this.apiKey}`,
         "X-ClientId": this.clientId,
