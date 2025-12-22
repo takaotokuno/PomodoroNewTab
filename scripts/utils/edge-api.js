@@ -35,12 +35,6 @@ export class EdgeApi {
       throw new Error(`Upload failed (${response.status}): ${errorText}`);
     }
 
-    // デバッグ用：すべてのレスポンスヘッダーを出力
-    console.log("Response headers:");
-    for (const [key, value] of response.headers.entries()) {
-      console.log(`  ${key}: ${value}`);
-    }
-
     let operationId = response.headers.get("Location")
 
     if (!operationId) {
@@ -48,7 +42,7 @@ export class EdgeApi {
     }
 
     console.log(`OPERATION_ID=${operationId}`);
-    return { status: "accepted", operationId };
+    return;
   }
 
   async checkUploadStatus(operationId) {

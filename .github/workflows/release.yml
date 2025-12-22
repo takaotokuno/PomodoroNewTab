@@ -64,6 +64,9 @@ jobs:
         id: edge_upload
         run: |
           output=$(npm run upload:edge ${{ steps.package.outputs.package_file }})
+          operation_id=$(printf '%s\n' "$output" | grep -m1 'OPERATION_ID=' | cut -d'=' -f2-)
+          echo "DEBUG raw operation_id:"
+          printf '%s' "$operation_id" | cat -A
           operation_id=$(echo "$output" | grep "OPERATION_ID=" | cut -d'=' -f2)
           echo "operation_id=$operation_id" >> "$GITHUB_OUTPUT"
         env:
