@@ -2,42 +2,97 @@ name: Release
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*.*.*'
-      - 'v*.*.*-beta.*'
+    inputs:
+      channel:
+        description: "Release channel"
+        type: choice
+        required: true
+        default: beta
+        options: 
+          - stable
+          - beta
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
+      
       - run: npm ci
 
-      - id: build
-        run: npm run build
+      - name: Get version and create tag
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG_NAME="v$VERSION"
+          
+          if [[ "${{ github.event.inputs.channel }}" == "beta" ]]; then
+            TAG_NAME="v$VERSION-beta"
+          fi
+          
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          git push origin "$TAG_NAME"
 
-      - id: package
-        run: npm run package
+      - run: npm run build
 
-      - id: publish_chrome
-        run: npm run publish:chrome
+      - run: npm run package
+
+      #- name: Publish to Chrome Web Store
+      #  run: npm run publish:chrome
+      #  env:
+      #    CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+      #    CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+      #    CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+      #    CHROME_ITEM_ID: ${{ secrets.CHROME_ITEM_ID }}
+
+      - name: Upload to Microsoft Edge Add-ons
+        id: edge_upload
+        run: |
+          output=$(npm run upload:edge dist/extension.zip)
+          operation_id=$(echo "$output" | grep "OPERATION_ID=" | cut -d'=' -f2)
+          echo "operation_id=$operation_id" >> "$GITHUB_OUTPUT"
         env:
-          IS_BETA: ${{ contains(github.ref, '-beta') }}
-          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
 
-      - id: publish_edge
+      - name: Wait for Edge Add-ons upload completion
+        run: npm run wait:edge ${{ steps.edge_upload.outputs.operation_id }}
+        env:
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+
+      - name: Publish to Microsoft Edge Add-ons
+        if: ${{ github.event.inputs.channel === 'stable' }}
         run: npm run publish:edge
         env:
-          IS_BETA: ${{ contains(github.ref, '-beta') }}
           EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
-          EDGE_CLIENT_SECRET: ${{ secrets.EDGE_CLIENT_SECRET }}
-          EDGE_TENANT_ID: ${{ secrets.EDGE_TENANT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+
+      #- name: Create GitHub Release
+      #  uses: softprops/action-gh-release@v1
+      #  with:
+      #    tag_name: ${{ steps.version.outputs.tag_name }}
+      #    name: Release ${{ steps.version.outputs.tag_name }}
+      #    body: |
+      #      Release version ${{ steps.version.outputs.version }} (${{ github.event.inputs.channel }} channel)
+      #      
+      #      **Published to:**
+      #      - Chrome Web Store
+      #      - Microsoft Edge Add-ons
+      #    prerelease: ${{ steps.version.outputs.is_beta == 'true' }}
