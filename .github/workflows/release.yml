@@ -50,7 +50,12 @@ jobs:
 
       - run: npm run build
 
-      - run: npm run package
+      - name: Package extension
+        id: package
+        run: |
+          output=$(npm run package)
+          package_file=$(echo "$output" | grep "PACKAGE_FILE=" | cut -d'=' -f2)
+          echo "package_file=$package_file" >> "$GITHUB_OUTPUT"
 
       #- name: Publish to Chrome Web Store
       #  run: npm run publish:chrome
@@ -63,7 +68,7 @@ jobs:
       - name: Upload to Microsoft Edge Add-ons
         id: edge_upload
         run: |
-          output=$(npm run upload:edge dist/extension.zip)
+          output=$(npm run upload:edge ${{ steps.package.outputs.package_file }})
           operation_id=$(echo "$output" | grep "OPERATION_ID=" | cut -d'=' -f2)
           echo "operation_id=$operation_id" >> "$GITHUB_OUTPUT"
         env:
