@@ -35,7 +35,7 @@ export class EdgeApi {
       throw new Error(`Upload failed (${response.status}): ${errorText}`);
     }
 
-    const operationId = response.headers.get("operation-id");
+    const operationId = response.headers.get("operationID");
     if (!operationId) {
       throw new Error("No operation ID returned from upload");
     }
