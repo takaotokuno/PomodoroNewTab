@@ -41,20 +41,7 @@ export class EdgeApi {
       console.log(`  ${key}: ${value}`);
     }
 
-    // 複数の可能性のあるヘッダー名を試す
-    let operationId = response.headers.get("operationID") || 
-                     response.headers.get("operation-id") ||
-                     response.headers.get("Location") ||
-                     response.headers.get("Operation-Location");
-    
-    // LocationヘッダーからOperation IDを抽出する場合
-    if (!operationId && response.headers.get("Location")) {
-      const location = response.headers.get("Location");
-      const match = location.match(/operations\/([^\/]+)/);
-      if (match) {
-        operationId = match[1];
-      }
-    }
+    let operationId = response.headers.get("Location")
 
     if (!operationId) {
       throw new Error("No operation ID returned from upload");
