@@ -40,7 +40,7 @@ export class EdgeApi {
       throw new Error("No operation ID returned from upload");
     }
 
-    console.log(`Upload accepted. Operation ID: ${operationId}`);
+    console.log(`OPERATION_ID=${operationId}`);
     return { status: "accepted", operationId };
   }
 
