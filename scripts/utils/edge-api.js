@@ -30,7 +30,7 @@ export class EdgeApi {
       body: fileData,
     });
 
-    if (response.status !== 202) {
+    if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Upload failed (${response.status}): ${errorText}`);
     }
@@ -55,7 +55,7 @@ export class EdgeApi {
       },
     });
 
-    if (response.status !== 200) {
+    if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Status check failed (${response.status}): ${errorText}`);
     }
@@ -76,7 +76,7 @@ export class EdgeApi {
       },
     });
 
-    if (response.status !== 202) {
+    if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Publish failed (${response.status}): ${errorText}`);
     }
