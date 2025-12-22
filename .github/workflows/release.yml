@@ -30,7 +30,7 @@ jobs:
       
       - run: npm ci
 
-      - name: Get version and create tag
+      - name: Get version
         id: version
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -42,11 +42,6 @@ jobs:
           
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
-          
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-          git push origin "$TAG_NAME"
 
       - run: npm run build
 
@@ -90,6 +85,14 @@ jobs:
           EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
           EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+
+      - name: Create tag
+        id: tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          git push origin "$TAG_NAME"
 
       #- name: Create GitHub Release
       #  uses: softprops/action-gh-release@v1
