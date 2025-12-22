@@ -77,7 +77,7 @@ jobs:
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
 
       - name: Publish to Microsoft Edge Add-ons
-        if: ${{ github.event.inputs.channel === 'stable' }}
+        if: ${{ github.event.inputs.channel == 'stable' }}
         run: npm run publish:edge
         env:
           EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
