@@ -41,8 +41,7 @@ export class EdgeApi {
       throw new Error("No operation ID returned from upload");
     }
 
-    console.log(`OPERATION_ID=${operationId}`);
-    return;
+    return { status: response.status, operationId: operationId };
   }
 
   async checkUploadStatus(operationId) {
