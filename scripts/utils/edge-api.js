@@ -35,7 +35,27 @@ export class EdgeApi {
       throw new Error(`Upload failed (${response.status}): ${errorText}`);
     }
 
-    const operationId = response.headers.get("operationID");
+    // デバッグ用：すべてのレスポンスヘッダーを出力
+    console.log("Response headers:");
+    for (const [key, value] of response.headers.entries()) {
+      console.log(`  ${key}: ${value}`);
+    }
+
+    // 複数の可能性のあるヘッダー名を試す
+    let operationId = response.headers.get("operationID") || 
+                     response.headers.get("operation-id") ||
+                     response.headers.get("Location") ||
+                     response.headers.get("Operation-Location");
+    
+    // LocationヘッダーからOperation IDを抽出する場合
+    if (!operationId && response.headers.get("Location")) {
+      const location = response.headers.get("Location");
+      const match = location.match(/operations\/([^\/]+)/);
+      if (match) {
+        operationId = match[1];
+      }
+    }
+
     if (!operationId) {
       throw new Error("No operation ID returned from upload");
     }
