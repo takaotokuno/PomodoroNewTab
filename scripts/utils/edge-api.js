@@ -9,7 +9,9 @@ export class EdgeApi {
     this.endPoint = "https://api.addons.microsoftedge.microsoft.com";
 
     if (!this.clientId || !this.apiKey || !this.productId) {
-      throw new Error("Missing required Edge Add-ons environment variables: EDGE_CLIENT_ID, EDGE_API_KEY, EDGE_PRODUCT_ID");
+      throw new Error(
+        "Missing required Edge Add-ons environment variables: EDGE_CLIENT_ID, EDGE_API_KEY, EDGE_PRODUCT_ID"
+      );
     }
   }
 
@@ -44,7 +46,7 @@ export class EdgeApi {
 
   async checkUploadStatus(operationId) {
     const statusUrl = `${this.endPoint}/v1/products/${this.productId}/submissions/draft/package/operations/${operationId}`;
-    
+
     const response = await fetch(statusUrl, {
       method: "GET",
       headers: {
