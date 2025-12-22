@@ -18,6 +18,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: PRODUCT
+    
     steps:
       - uses: actions/checkout@v4
 
