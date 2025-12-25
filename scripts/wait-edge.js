@@ -22,8 +22,10 @@ async function waitForUploadCompletion(api, operationId, maxWaitTime = 600000) {
       console.log("status message: " + status.message);
       console.log("error code" + status.errorCode);
 
-      console.log("errors: " + status.errors.map(e => JSON.stringify(e)).join(","));
-      
+      console.log(
+        "errors: " + status.errors.map((e) => JSON.stringify(e)).join(",")
+      );
+
       throw new Error(
         `Upload processing failed: ${status.message || "Unknown error"}`
       );
