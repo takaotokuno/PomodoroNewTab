@@ -63,7 +63,7 @@ jobs:
       - name: Upload to Microsoft Edge Add-ons
         id: edge_upload
         run: |
-          output=$(npm run upload:edge ${{ steps.package.outputs.package_file }})
+          output=$(npm run upload:edge ${{ steps.package.outputs.package_file }} | tee /dev/stderr)
           operation_id=$(echo "$output" | grep "OPERATION_ID=" | cut -d'=' -f2)
           echo "operation_id=$operation_id" >> "$GITHUB_OUTPUT"
         env:
