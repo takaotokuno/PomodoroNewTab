@@ -17,8 +17,8 @@ export class EdgeApi {
 
   async uploadPackage(zipFilePath) {
     const uploadUrl = `${this.endPoint}/v1/products/${this.productId}/submissions/draft/package`;
-    
-    // ファイルの存在とサイズを確認
+
+    // ファイルの存在確認
     try {
       const stats = await fs.promises.stat(zipFilePath);
       console.log(`File exists: ${zipFilePath}`);
@@ -26,18 +26,13 @@ export class EdgeApi {
     } catch (error) {
       throw new Error(`File not found or inaccessible: ${zipFilePath}`);
     }
-    
-    const fileData = await fs.promises.readFile(zipFilePath);
 
-    console.log(`Uploading package to Edge Add-ons: ${zipFilePath}`);
-    console.log(`Upload URL: ${uploadUrl}`);
-    console.log(`File data length: ${fileData.length} bytes`);
-    
+    const fileData = await fs.promises.readFile(zipFilePath);
     const response = await fetch(uploadUrl, {
       method: "POST",
       headers: {
         Authorization: `ApiKey ${this.apiKey}`,
-        "X-ClientId": this.clientId,
+        "X-ClientID": this.clientId,
         "Content-Type": "application/zip",
       },
       body: fileData,
@@ -45,38 +40,15 @@ export class EdgeApi {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log(`Upload failed with status ${response.status}`);
-      console.log(`Error response: ${errorText}`);
       throw new Error(`Upload failed (${response.status}): ${errorText}`);
     }
 
-    console.log(`Upload successful with status ${response.status}`);
-    
-    // デバッグ用：すべてのレスポンスヘッダーを出力
-    console.log("Response headers:");
-    for (const [key, value] of response.headers.entries()) {
-      console.log(`  ${key}: ${value}`);
-    }
-
-    // 複数の可能性のあるヘッダー名を試す
-    let operationId = response.headers.get("operationID") || 
-                     response.headers.get("operation-id") ||
-                     response.headers.get("Location") ||
-                     response.headers.get("Operation-Location");
-    
-    // LocationヘッダーからOperation IDを抽出する場合
-    if (operationId && operationId.includes('/operations/')) {
-      const match = operationId.match(/operations\/([^\/]+)/);
-      if (match) {
-        operationId = match[1];
-      }
-    }
+    let operationId = response.headers.get("Location");
 
     if (!operationId) {
       throw new Error("No operation ID returned from upload");
     }
 
-    console.log(`OPERATION_ID=${operationId}`);
     return { status: response.status, operationId: operationId };
   }
 
