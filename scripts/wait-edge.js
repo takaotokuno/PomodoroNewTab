@@ -18,6 +18,11 @@ async function waitForUploadCompletion(api, operationId, maxWaitTime = 600000) {
     }
 
     if (status.status === "Failed") {
+      console.log("Upload Failed");
+      console.log("status message: " + status.message);
+      console.log("error code" + status.errorCode);
+      console.log("errors: " + status.errors.join(","));
+      
       throw new Error(
         `Upload processing failed: ${status.message || "Unknown error"}`
       );
