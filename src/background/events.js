@@ -7,6 +7,13 @@ import { handleSound } from "./sound-controller.js";
 import { createErrObject, normalizeResponse, isFatal } from "./result.js";
 import Constants from "../constants.js";
 
+const StartSettingsSchema = z.object({
+  minutes: z
+    .number()
+    .min(Constants.DURATIONS.MIN_TOTAL_MINUTES)
+    .max(Constants.DURATIONS.MAX_TOTAL_MINUTES),
+});
+
 const SoundSettingsSchema = z.object({
   soundEnabled: z.boolean(),
   soundVolume: z.number().min(0).max(100),
@@ -107,28 +114,21 @@ async function _runStep(step) {
 
 /**
  * Creates a step for starting the timer with validation.
- * @param {number} minutes - Timer duration in minutes
+ * @param {Object} payload - Timer duration in minutes
  * @returns {Object} Step object
  */
-function _startTimerStep(minutes) {
+function _startTimerStep(payload) {
   return {
     fn: () => {
-      if (minutes === undefined || minutes === null) {
-        throw new Error("Invalid minutes: parameter is required");
+      const result = StartSettingsSchema.safeParse(payload);
+      if (!result.success) {
+        const errorMessages =
+          result.error?.issues?.map((issue) => issue.message).join(", ") ||
+          "Validation failed";
+        throw new Error(errorMessages);
       }
-      if (typeof minutes !== "number" || isNaN(minutes)) {
-        throw new Error("Invalid minutes: must be a number");
-      }
-      if (minutes < Constants.DURATIONS.MIN_TOTAL_MINUTES) {
-        throw new Error(
-          `Invalid minutes: must be at least ${Constants.DURATIONS.MIN_TOTAL_MINUTES}`
-        );
-      }
-      if (minutes > Constants.DURATIONS.MAX_TOTAL_MINUTES) {
-        throw new Error(
-          `Invalid minutes: must be at most ${Constants.DURATIONS.MAX_TOTAL_MINUTES}`
-        );
-      }
+
+      const { minutes } = payload;
       getTimer().start(minutes);
       return { success: true };
     },
@@ -169,9 +169,8 @@ function _saveSoundStep(payload) {
  */
 const EVENTS = {
   "timer/start": async (payload) => {
-    const { minutes } = payload;
     const steps = [
-      _startTimerStep(minutes),
+      _startTimerStep(payload),
       _onStep("enableBlock"),
       _onStep("startTick"),
     ];
