@@ -70,7 +70,7 @@ describe("Sound End-to-End Tests", () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
       // Enable sound and start timer
-      await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 80});
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 80 });
       await bgClient.start(25);
 
       const timer = getTimer();
@@ -100,7 +100,7 @@ describe("Sound End-to-End Tests", () => {
     test("should stop sound when paused", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 60});
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 60 });
       await bgClient.start(25);
       expect(isPlaying).toBe(true);
 
@@ -113,7 +113,7 @@ describe("Sound End-to-End Tests", () => {
     test("should not play sound when disabled from start", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      await bgClient.saveSoundSettings({soundEnabled: false, soundVolume: 0});
+      await bgClient.saveSoundSettings({ soundEnabled: false, soundVolume: 0 });
       await bgClient.start(25);
 
       expect(getTimer().soundEnabled).toBe(false);
@@ -124,7 +124,7 @@ describe("Sound End-to-End Tests", () => {
     test("should save sound settings via events integration", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 90});
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 90 });
 
       // Verify storage was called (snapshot includes soundEnabled and soundVolume)
       expect(chromeMock.storage.local.set).toHaveBeenCalled();
@@ -141,14 +141,17 @@ describe("Sound End-to-End Tests", () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
       // Test valid volume range
-      await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 50});
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 50 });
       expect(getTimer().soundVolume).toBe(50);
 
       // Test edge cases
-      await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 0});
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 0 });
       expect(getTimer().soundVolume).toBe(0);
 
-      await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 100});
+      await bgClient.saveSoundSettings({
+        soundEnabled: true,
+        soundVolume: 100,
+      });
       expect(getTimer().soundVolume).toBe(100);
     });
   });

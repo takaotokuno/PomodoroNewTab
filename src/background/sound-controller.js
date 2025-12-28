@@ -3,6 +3,7 @@ import Constants from "../constants.js";
 const { TIMER_MODES, SESSION_TYPES } = Constants;
 
 let isPlaying = false;
+let volume = 0;
 let initPromise = null;
 
 /**
@@ -10,7 +11,7 @@ let initPromise = null;
  * @throws {Error} If sound control fails
  */
 export async function handleSound() {
-  let timer = getTimer();
+  const timer = getTimer();
 
   if (
     !timer.soundEnabled ||
@@ -21,6 +22,10 @@ export async function handleSound() {
     return;
   }
 
+  if (isPlaying && timer.soundVolume !== volume) {
+    await updateVolume();
+  }
+
   if (isPlaying) return;
 
   await playAudio();
@@ -29,6 +34,8 @@ export async function handleSound() {
 export async function playAudio() {
   try {
     isPlaying = true;
+    volume = getTimer().soundVolume;
+
     await sendAudioMessage("PLAY", {
       soundFile: "resources/nature-sound.mp3",
       volume: getTimer().soundVolume,
@@ -52,6 +59,19 @@ export async function stopAudio() {
   }
 }
 
+export async function updateVolume() {
+  if (!isPlaying) return;
+
+  try {
+    await sendAudioMessage("UPDATE_VOLUME", {
+      volume: getTimer().soundVolume,
+    });
+    console.log("Volume updated");
+  } catch (error) {
+    console.warn("Failed to update volume:", error.message);
+  }
+}
+
 /**
  * offscreen.jsに音声制御メッセージを送信
  * @param {string} action - 実行するアクション ("PLAY", "STOP", "CLEANUP")
@@ -66,7 +86,7 @@ async function sendAudioMessage(action, options = {}) {
 
   try {
     await ensureOffscreen();
-    
+
     const res = await chrome.runtime.sendMessage(message);
     if (!res?.success) throw new Error(res?.error || "Offscreen error");
     return res;
@@ -79,13 +99,13 @@ async function sendAudioMessage(action, options = {}) {
  * Offscreen documentが存在することを確認し、なければ作成
  */
 async function ensureOffscreen() {
-  if(initPromise) return initPromise;
+  if (initPromise) return initPromise;
 
   initPromise = (async () => {
     const contexts = await chrome.runtime.getContexts({
       contextTypes: ["OFFSCREEN_DOCUMENT"],
     });
-    
+
     if (contexts.length === 0) {
       await chrome.offscreen.createDocument({
         url: "src/offscreen/offscreen.html",

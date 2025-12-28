@@ -190,7 +190,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with minutes below minimum', async () => {
       const result = await handleEvents("timer/start", { minutes: 4 });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be at least 5");
@@ -198,7 +198,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with minutes above maximum', async () => {
       const result = await handleEvents("timer/start", { minutes: 301 });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be at most 300");
@@ -206,7 +206,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called without minutes', async () => {
       const result = await handleEvents("timer/start", {});
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: parameter is required");
@@ -214,7 +214,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with non-number minutes', async () => {
       const result = await handleEvents("timer/start", { minutes: "25" });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be a number");
@@ -222,7 +222,7 @@ describe("Events", () => {
 
     test('should return fatal error when "timer/start" is called with NaN', async () => {
       const result = await handleEvents("timer/start", { minutes: NaN });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
       expect(result.error).toContain("Invalid minutes: must be a number");
@@ -350,14 +350,20 @@ describe("Events", () => {
     });
 
     test('should save sound settings when "sound/save"', async () => {
-      let result = await handleEvents("sound/save", {soundEnabled: true, soundVolume: 100});
+      let result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: 100,
+      });
 
       expect(fakeTimer.soundEnabled).toBe(true);
       expect(result.soundEnabled).toBe(true);
       expect(fakeTimer.soundVolume).toBe(100);
       expect(result.soundVolume).toBe(100);
 
-      result = await handleEvents("sound/save", {soundEnabled: false, soundVolume: 0});
+      result = await handleEvents("sound/save", {
+        soundEnabled: false,
+        soundVolume: 0,
+      });
 
       expect(fakeTimer.soundEnabled).toBe(false);
       expect(result.soundEnabled).toBe(false);
@@ -367,50 +373,66 @@ describe("Events", () => {
 
     test('should return fatal error when "sound/save" is called without soundEnabled', async () => {
       const result = await handleEvents("sound/save", { soundVolume: 50 });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("expected boolean, received undefined");
+      expect(result.error).toContain("soundEnabled is required");
     });
 
     test('should return fatal error when "sound/save" is called without soundVolume', async () => {
       const result = await handleEvents("sound/save", { soundEnabled: true });
-      
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("expected number, received undefined");
+      expect(result.error).toContain("soundVolume is required");
     });
 
     test('should return fatal error when "sound/save" is called with invalid soundEnabled type', async () => {
-      const result = await handleEvents("sound/save", { soundEnabled: "yes", soundVolume: 50 });
-      
+      const result = await handleEvents("sound/save", {
+        soundEnabled: "yes",
+        soundVolume: 50,
+      });
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("expected boolean, received string");
+      expect(result.error).toContain("soundEnabled is boolean");
     });
 
     test('should return fatal error when "sound/save" is called with invalid soundVolume type', async () => {
-      const result = await handleEvents("sound/save", { soundEnabled: true, soundVolume: "50" });
-      
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: "50",
+      });
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("expected number, received string");
+      expect(result.error).toContain("soundVolume is Number");
     });
 
     test('should return fatal error when "sound/save" is called with soundVolume below minimum', async () => {
-      const result = await handleEvents("sound/save", { soundEnabled: true, soundVolume: -1 });
-      
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: -1,
+      });
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("soundVolume must be greater than or equal to 0");
+      expect(result.error).toContain(
+        "soundVolume must be greater than or equal to 0"
+      );
     });
 
     test('should return fatal error when "sound/save" is called with soundVolume above maximum', async () => {
-      const result = await handleEvents("sound/save", { soundEnabled: true, soundVolume: 101 });
-      
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: 101,
+      });
+
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("soundVolume must be lower than or equal to 100");
+      expect(result.error).toContain(
+        "soundVolume must be lower than or equal to 100"
+      );
     });
   });
 
@@ -524,7 +546,9 @@ describe("Events", () => {
         expect.objectContaining({
           success: false,
           severity: Constants.SEVERITY_LEVELS.WARNING,
-          error: expect.stringMatching(/Sound failed[\s\S]*Save failed|Save failed[\s\S]*Sound failed/),
+          error: expect.stringMatching(
+            /Sound failed[\s\S]*Save failed|Save failed[\s\S]*Sound failed/
+          ),
         })
       );
     });

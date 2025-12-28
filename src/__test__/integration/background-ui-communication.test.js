@@ -161,7 +161,10 @@ describe("Background-UI Communication Integration", () => {
         soundVolume: 75,
       });
 
-      const result = await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 75});
+      const result = await bgClient.saveSoundSettings({
+        soundEnabled: true,
+        soundVolume: 75,
+      });
 
       expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
         type: "sound/save",
@@ -254,7 +257,10 @@ describe("Background-UI Communication Integration", () => {
     it("should execute sound/save event correctly", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      const result = await handleEvents("sound/save", { soundEnabled: true, soundVolume: 85 });
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: 85,
+      });
 
       expect(result.success).toBe(true);
       expect(result.soundEnabled).toBe(true);

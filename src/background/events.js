@@ -12,14 +12,17 @@ const SoundSettingsSchema = z.object({
     required_error: "soundEnabled is required",
     invalid_type_error: "soundEnabled is boolean",
   }),
-  soundVolume: z.number({
-    required_error: "soundVolume is required",
-    invalid_type_error: "soundVolume is Number",
-  }).min(0, {
-    message: "soundVolume must be greater than or equal to 0"
-  }).max(100, {
-    message: "soundVolume must be lower than or equal to 100"
-  }),
+  soundVolume: z
+    .number({
+      required_error: "soundVolume is required",
+      invalid_type_error: "soundVolume is Number",
+    })
+    .min(0, {
+      message: "soundVolume must be greater than or equal to 0",
+    })
+    .max(100, {
+      message: "soundVolume must be lower than or equal to 100",
+    }),
 });
 
 /**
@@ -153,16 +156,20 @@ function _startTimerStep(minutes) {
  * @returns {Object} Step object
  */
 function _saveSoundStep(payload) {
-  const {soundEnabled, soundVolume} = payload;
   return {
     fn: () => {
       const result = SoundSettingsSchema.safeParse(payload);
-      if(!result.success){
-        throw new Error(result.error.message);
+      if (!result.success) {
+        const errorMessages = result.error.errors
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join(", ");
+        throw new Error(`Validation failed: ${errorMessages}`);
       }
+
+      const { soundEnabled, soundVolume } = result.data;
       getTimer().soundEnabled = soundEnabled;
       getTimer().soundVolume = soundVolume;
-      return payload;
+      return result.data;
     },
     name: "saveSound",
     fatal: true,

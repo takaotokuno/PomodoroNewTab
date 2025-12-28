@@ -147,12 +147,12 @@ class UIController {
     );
   }
 
-  async saveSoundSettings(){
+  async saveSoundSettings() {
     const preSoundEnabled = this.soundEnabled;
     const preSoundVolume = this.soundVolume;
     try {
       const result = await this.bgClient.saveSoundSettings({
-        soundEnabled: this.soundToggle.checked, 
+        soundEnabled: this.soundToggle.checked,
         soundVolume: parseInt(this.soundRange.value, 10),
       });
       if (!result || !result.success) {

@@ -44,11 +44,15 @@ describe("UI", () => {
     "timer-duration-error": { style: { display: "none" } },
     "start-button": { addEventListener: vi.fn() },
     "sound-toggle": { addEventListener: vi.fn(), checked: false },
-    "sound-range": { 
-      addEventListener: vi.fn(), 
+    "sound-range": {
+      addEventListener: vi.fn(),
       _value: "50",
-      get value() { return this._value; },
-      set value(val) { this._value = val.toString(); }
+      get value() {
+        return this._value;
+      },
+      set value(val) {
+        this._value = val.toString();
+      },
     },
     "running-screen": { style: { display: "none" } },
     "pause-button": { addEventListener: vi.fn(), textContent: "" },
@@ -82,7 +86,8 @@ describe("UI", () => {
     Object.values(mockElements).forEach((element) => {
       if (element.style) element.style.display = "none";
       if (element.addEventListener) element.addEventListener.mockClear();
-      if (Object.prototype.hasOwnProperty.call(element,"checked")) element.checked = false;
+      if (Object.prototype.hasOwnProperty.call(element, "checked"))
+        element.checked = false;
       if (element._value !== undefined) element._value = "50";
     });
   });
@@ -113,9 +118,10 @@ describe("UI", () => {
       expect(
         mockElements["sound-toggle"].addEventListener
       ).toHaveBeenCalledWith("change", expect.any(Function));
-      expect(
-        mockElements["sound-range"].addEventListener
-      ).toHaveBeenCalledWith("change", expect.any(Function));
+      expect(mockElements["sound-range"].addEventListener).toHaveBeenCalledWith(
+        "change",
+        expect.any(Function)
+      );
     });
 
     test("should call syncFromBG during initialization", async () => {
@@ -531,7 +537,7 @@ describe("UI", () => {
     test("should revert sound settings on save error", async () => {
       mockElements["sound-toggle"].checked = false;
       mockElements["sound-range"].value = "50";
-      
+
       // Mock save failure
       mockBGClient.saveSoundSettings.mockResolvedValue({
         success: false,
@@ -559,9 +565,11 @@ describe("UI", () => {
     test("should handle save settings exception", async () => {
       mockElements["sound-toggle"].checked = false;
       mockElements["sound-range"].value = "50";
-      
+
       // Mock save exception
-      mockBGClient.saveSoundSettings.mockRejectedValue(new Error("Network error"));
+      mockBGClient.saveSoundSettings.mockRejectedValue(
+        new Error("Network error")
+      );
 
       await import("@/ui/ui.js");
 

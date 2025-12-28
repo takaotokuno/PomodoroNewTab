@@ -23,7 +23,7 @@ async function loadAudio(soundFile, volume = 0.2, loop = true) {
 
   // 設定を適用
   audio.loop = loop;
-  audio.volume = volume*0.5;
+  audio.volume = volume * 0.5 * 0.01;
 
   // 音声ファイルの読み込み完了を待つ
   return new Promise((resolve, reject) => {
@@ -121,6 +121,14 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 
         case "STOP":
           stopAudio();
+          sendResponse({ success: true });
+          break;
+
+        case "UPDATE_VOLUME":
+          if (audio && isLoaded) {
+            audio.volume = (message.volume || 0.2) * 0.5 * 0.01;
+            console.log("Volume updated to:", audio.volume);
+          }
           sendResponse({ success: true });
           break;
 

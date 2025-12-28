@@ -1,28 +1,46 @@
 import path from "path";
+import { build } from "esbuild";
 import { buildConfig } from "./config/build-config.js";
-import { cleanDirectory, copyFile, copyDirectory } from "./config/file-utils.js";
+import { cleanDirectory, copyFile, copyDirectory } from "./utils/file-utils.js";
 
-async function buildChrome() {
-    const arg = process.argv.find(arg => arg.startsWith("--browser="));
-    const browser = arg ? arg.split("=")[1] : "chrome";
+async function buildExtension() {
+  const outputDir = buildConfig.baseDir;
 
-    const browserConfig = buildConfig[browser];
-    const commonConfig = buildConfig.common;
-    const outputDir = browserConfig.outputDir;
+  try {
+    await cleanDirectory(outputDir);
 
-    try{
-        await cleanDirectory(outputDir);
+    // Bundle background script with dependencies
+    await build({
+      entryPoints: ["src/background/index.js"],
+      bundle: true,
+      format: "esm",
+      outfile: path.join(outputDir, "src/background/index.js"),
+      platform: "browser",
+      target: "chrome88",
+      external: ["chrome"],
+    });
 
-        await copyDirectory(commonConfig.sourceDir, path.join(outputDir, "src"), commonConfig.excludePatterns);
+    // Copy other files (excluding bundled background files)
+    await copyDirectory(
+      buildConfig.sourceDir,
+      path.join(outputDir, buildConfig.sourceDir),
+      [...buildConfig.excludePatterns, "**/background/**"]
+    );
 
-        await copyDirectory(commonConfig.resourcesDir, path.join(outputDir, "resources"), commonConfig.excludePatterns);
+    await copyDirectory(
+      buildConfig.resourcesDir,
+      path.join(outputDir, buildConfig.resourcesDir),
+      buildConfig.excludePatterns
+    );
 
-        await copyFile(commonConfig.manifestFile, path.join(outputDir, commonConfig.manifestFile));
-
-    }catch(e){
-        console.error("Build Failed:", e);
-        process.exit(1);
-    }
+    await copyFile(
+      buildConfig.manifestFile,
+      path.join(outputDir, buildConfig.manifestFile)
+    );
+  } catch (e) {
+    console.error("Build Failed:", e);
+    process.exit(1);
+  }
 }
 
-buildChrome();
+buildExtension();
