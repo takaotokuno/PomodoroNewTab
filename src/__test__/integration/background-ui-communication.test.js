@@ -133,6 +133,7 @@ describe("Background-UI Communication Integration", () => {
         sessionType: "work",
         sessionRemaining: 1500000,
         soundEnabled: false,
+        soundVolume: 50,
       });
 
       const result = await bgClient.update();
@@ -157,16 +158,19 @@ describe("Background-UI Communication Integration", () => {
       chromeMock.runtime.sendMessage.mockResolvedValue({
         success: true,
         soundEnabled: true,
+        soundVolume: 75,
       });
 
-      const result = await bgClient.saveSoundSettings(true);
+      const result = await bgClient.saveSoundSettings({soundEnabled: true, soundVolume: 75});
 
       expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
         type: "sound/save",
-        isEnabled: true,
+        soundEnabled: true,
+        soundVolume: 75,
       });
       expect(result.success).toBe(true);
       expect(result.soundEnabled).toBe(true);
+      expect(result.soundVolume).toBe(75);
     });
   });
 
@@ -182,6 +186,7 @@ describe("Background-UI Communication Integration", () => {
       expect(result).toHaveProperty("sessionType");
       expect(result).toHaveProperty("sessionRemaining");
       expect(result).toHaveProperty("soundEnabled");
+      expect(result).toHaveProperty("soundVolume");
     });
 
     it("should execute timer/start event with valid minutes", async () => {
@@ -249,13 +254,15 @@ describe("Background-UI Communication Integration", () => {
     it("should execute sound/save event correctly", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      const result = await handleEvents("sound/save", { isEnabled: true });
+      const result = await handleEvents("sound/save", { soundEnabled: true, soundVolume: 85 });
 
       expect(result.success).toBe(true);
       expect(result.soundEnabled).toBe(true);
+      expect(result.soundVolume).toBe(85);
 
       const timer = getTimer();
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.soundVolume).toBe(85);
     });
   });
 });

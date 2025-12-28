@@ -5,14 +5,8 @@ node_modules/
 coverage/
 dist/
 
-# Development
-package-lock.json
-
 # Git files (for distribution)
 .git/
 
 # eslint
 .eslintcache
-
-# Resources
-resources/nature-sound.mp3

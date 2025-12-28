@@ -31,7 +31,7 @@ export async function playAudio() {
     isPlaying = true;
     await sendAudioMessage("PLAY", {
       soundFile: "resources/nature-sound.mp3",
-      volume: 0.2,
+      volume: getTimer().soundVolume,
       loop: true,
     });
     console.log("Audio playback started");

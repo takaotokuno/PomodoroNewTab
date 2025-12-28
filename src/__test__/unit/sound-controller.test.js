@@ -10,6 +10,7 @@ const { TIMER_MODES, SESSION_TYPES } = Constants;
 // Mock timer-store
 const mockTimer = {
   soundEnabled: true,
+  soundVolume: 0.5,
   mode: TIMER_MODES.RUNNING,
   sessionType: SESSION_TYPES.WORK,
 };
@@ -44,7 +45,7 @@ describe("SoundController", () => {
         type: "AUDIO_CONTROL",
         action: "PLAY",
         soundFile: "resources/nature-sound.mp3",
-        volume: 0.2,
+        volume: mockTimer.soundVolume,
         loop: true,
       });
     });
@@ -89,7 +90,7 @@ describe("SoundController", () => {
         type: "AUDIO_CONTROL",
         action: "PLAY",
         soundFile: "resources/nature-sound.mp3",
-        volume: 0.2,
+        volume: mockTimer.soundVolume,
         loop: true,
       });
     });

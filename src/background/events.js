@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { initTimer, getTimer, saveSnapshot } from "./timer-store.js";
 import { startTick, stopTick } from "./setup-alarms.js";
 import { notify } from "./notification.js";
@@ -5,6 +6,21 @@ import { enableBlock, disableBlock } from "./sites-guard.js";
 import { handleSound } from "./sound-controller.js";
 import { createErrObject, normalizeResponse, isFatal } from "./result.js";
 import Constants from "../constants.js";
+
+const SoundSettingsSchema = z.object({
+  soundEnabled: z.boolean({
+    required_error: "soundEnabled is required",
+    invalid_type_error: "soundEnabled is boolean",
+  }),
+  soundVolume: z.number({
+    required_error: "soundVolume is required",
+    invalid_type_error: "soundVolume is Number",
+  }).min(0, {
+    message: "soundVolume must be greater than or equal to 0"
+  }).max(100, {
+    message: "soundVolume must be lower than or equal to 100"
+  }),
+});
 
 /**
  * Configuration for sub-module operations.
@@ -136,15 +152,17 @@ function _startTimerStep(minutes) {
  * @param {boolean} isEnabled - Whether sound is enabled
  * @returns {Object} Step object
  */
-function _saveSoundStep(isEnabled) {
+function _saveSoundStep(payload) {
+  const {soundEnabled, soundVolume} = payload;
   return {
     fn: () => {
-      if (isEnabled === undefined || isEnabled === null) {
-        throw new Error("Invalid isEnabled: parameter is required");
+      const result = SoundSettingsSchema.safeParse(payload);
+      if(!result.success){
+        throw new Error(result.error.message);
       }
-      const soundEnabled = Boolean(isEnabled);
       getTimer().soundEnabled = soundEnabled;
-      return { soundEnabled };
+      getTimer().soundVolume = soundVolume;
+      return payload;
     },
     name: "saveSound",
     fatal: true,
@@ -189,11 +207,11 @@ const EVENTS = {
       sessionType: timer.sessionType,
       sessionRemaining: timer.getSessionRemaining(),
       soundEnabled: timer.soundEnabled,
+      soundVolume: timer.soundVolume,
     };
   },
   "sound/save": async (payload) => {
-    const { isEnabled } = payload;
-    const step = _saveSoundStep(isEnabled);
+    const step = _saveSoundStep(payload);
     return await _runStep(step);
   },
 };

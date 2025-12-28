@@ -23,7 +23,7 @@ async function loadAudio(soundFile, volume = 0.2, loop = true) {
 
   // 設定を適用
   audio.loop = loop;
-  audio.volume = volume;
+  audio.volume = volume*0.5;
 
   // 音声ファイルの読み込み完了を待つ
   return new Promise((resolve, reject) => {
