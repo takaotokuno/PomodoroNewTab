@@ -147,9 +147,9 @@ function _saveSoundStep(payload) {
     fn: () => {
       const result = SoundSettingsSchema.safeParse(payload);
       if (!result.success) {
-        const errorMessages = result.error?.issues
-          ?.map((issue) => issue.message)
-          .join(", ") || "Validation failed";
+        const errorMessages =
+          result.error?.issues?.map((issue) => issue.message).join(", ") ||
+          "Validation failed";
         throw new Error(errorMessages);
       }
 
