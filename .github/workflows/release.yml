@@ -1,6 +1,7 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*.*.*'
@@ -17,20 +18,26 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - id: build_chrome
-        run: npm run build:chrome
-      
-      - id: build_edge
-        run: npm run build:edge
+      - id: build
+        run: npm run build
 
-      - id: package_chrome
-        run: npm run package:chrome
-      
-      - id: package_edge
-        run: npm run package:edge
+      - id: package
+        run: npm run package
 
       - id: publish_chrome
         run: npm run publish:chrome
+        env:
+          IS_BETA: ${{ contains(github.ref, '-beta') }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
 
-      - id: publich_edge
+      - id: publish_edge
         run: npm run publish:edge
+        env:
+          IS_BETA: ${{ contains(github.ref, '-beta') }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_CLIENT_SECRET: ${{ secrets.EDGE_CLIENT_SECRET }}
+          EDGE_TENANT_ID: ${{ secrets.EDGE_TENANT_ID }}
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}

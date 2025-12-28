@@ -155,18 +155,14 @@ describe("Sound Integration - handleEvents Flow", () => {
         soundVolume: -1,
       });
       expect(result1.success).toBe(false);
-      expect(result1.error).toContain(
-        "soundVolume must be greater than or equal to 0"
-      );
+      expect(result1.error).toContain("Too small");
 
       const result2 = await handleEvents("sound/save", {
         soundEnabled: true,
         soundVolume: 101,
       });
       expect(result2.success).toBe(false);
-      expect(result2.error).toContain(
-        "soundVolume must be lower than or equal to 100"
-      );
+      expect(result2.error).toContain("Too big");
     });
   });
 

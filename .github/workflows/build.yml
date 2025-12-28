@@ -1,6 +1,7 @@
 name: Build
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["CI"]
     types:
@@ -8,6 +9,7 @@ on:
 
 jobs:
   build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,25 +19,15 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - id: build_chrome
-        run: npm run build:chrome
-      
-      - id: build_edge
-        run: npm run build:edge
+      - id: build
+        run: npm run build
 
-      - id: pachage
-        run: npm run pachage
+      - id: package
+        run: npm run package
       
-      - id: upload_chrome
+      - id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: pomodoro-new-tab-chrome-${{ github.sha }}
-          path: dist/packages/pomodoro-new-tab-chrome-*.zip
-          retention-days: 3
-
-      - id: upload_edge
-        uses: actions/upload-artifact@v4
-        with:
-          name: pomodoro-new-tab-edge-${{ github.sha }}
-          path: dist/packages/pomodoro-new-tab-edge-*.zip
+          name: pomodoro-new-tab-${{ github.sha }}
+          path: dist/packages/pomodoro-new-tab-*.zip
           retention-days: 3
