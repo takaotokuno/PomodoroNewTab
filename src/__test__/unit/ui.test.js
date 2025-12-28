@@ -44,6 +44,16 @@ describe("UI", () => {
     "timer-duration-error": { style: { display: "none" } },
     "start-button": { addEventListener: vi.fn() },
     "sound-toggle": { addEventListener: vi.fn(), checked: false },
+    "sound-range": {
+      addEventListener: vi.fn(),
+      _value: "50",
+      get value() {
+        return this._value;
+      },
+      set value(val) {
+        this._value = val.toString();
+      },
+    },
     "running-screen": { style: { display: "none" } },
     "pause-button": { addEventListener: vi.fn(), textContent: "" },
     "reset-button": { addEventListener: vi.fn() },
@@ -78,6 +88,7 @@ describe("UI", () => {
       if (element.addEventListener) element.addEventListener.mockClear();
       if (Object.prototype.hasOwnProperty.call(element, "checked"))
         element.checked = false;
+      if (element._value !== undefined) element._value = "50";
     });
   });
 
@@ -107,6 +118,10 @@ describe("UI", () => {
       expect(
         mockElements["sound-toggle"].addEventListener
       ).toHaveBeenCalledWith("change", expect.any(Function));
+      expect(mockElements["sound-range"].addEventListener).toHaveBeenCalledWith(
+        "change",
+        expect.any(Function)
+      );
     });
 
     test("should call syncFromBG during initialization", async () => {
@@ -477,6 +492,178 @@ describe("UI", () => {
       visibilityHandler();
 
       expect(clearInterval).toHaveBeenCalled();
+    });
+  });
+
+  describe("sound settings functionality", () => {
+    test("should save sound settings when toggle changes", async () => {
+      mockElements["sound-toggle"].checked = true;
+      mockElements["sound-range"].value = "75";
+
+      await import("@/ui/ui.js");
+
+      // Get the sound toggle change handler
+      const toggleHandler = mockElements[
+        "sound-toggle"
+      ].addEventListener.mock.calls.find((call) => call[0] === "change")[1];
+
+      await toggleHandler();
+
+      expect(mockBGClient.saveSoundSettings).toHaveBeenCalledWith({
+        soundEnabled: true,
+        soundVolume: 75,
+      });
+    });
+
+    test("should save sound settings when volume range changes", async () => {
+      mockElements["sound-toggle"].checked = false;
+      mockElements["sound-range"].value = "30";
+
+      await import("@/ui/ui.js");
+
+      // Get the sound range change handler
+      const rangeHandler = mockElements[
+        "sound-range"
+      ].addEventListener.mock.calls.find((call) => call[0] === "change")[1];
+
+      await rangeHandler();
+
+      expect(mockBGClient.saveSoundSettings).toHaveBeenCalledWith({
+        soundEnabled: false,
+        soundVolume: 30,
+      });
+    });
+
+    test("should revert sound settings on save error", async () => {
+      mockElements["sound-toggle"].checked = false;
+      mockElements["sound-range"].value = "50";
+
+      // Mock save failure
+      mockBGClient.saveSoundSettings.mockResolvedValue({
+        success: false,
+        error: "Save failed",
+      });
+
+      await import("@/ui/ui.js");
+
+      // Change settings
+      mockElements["sound-toggle"].checked = true;
+      mockElements["sound-range"].value = "80";
+
+      // Get the sound toggle change handler
+      const toggleHandler = mockElements[
+        "sound-toggle"
+      ].addEventListener.mock.calls.find((call) => call[0] === "change")[1];
+
+      await toggleHandler();
+
+      // Should revert to original values
+      expect(mockElements["sound-toggle"].checked).toBe(false);
+      expect(mockElements["sound-range"].value).toBe("50");
+    });
+
+    test("should handle save settings exception", async () => {
+      mockElements["sound-toggle"].checked = false;
+      mockElements["sound-range"].value = "50";
+
+      // Mock save exception
+      mockBGClient.saveSoundSettings.mockRejectedValue(
+        new Error("Network error")
+      );
+
+      await import("@/ui/ui.js");
+
+      // Change settings
+      mockElements["sound-toggle"].checked = true;
+      mockElements["sound-range"].value = "90";
+
+      // Get the sound toggle change handler
+      const toggleHandler = mockElements[
+        "sound-toggle"
+      ].addEventListener.mock.calls.find((call) => call[0] === "change")[1];
+
+      await toggleHandler();
+
+      // Should revert to original values
+      expect(mockElements["sound-toggle"].checked).toBe(false);
+      expect(mockElements["sound-range"].value).toBe("50");
+    });
+  });
+
+  describe("sound settings sync from background", () => {
+    test("should sync sound enabled state from background", async () => {
+      const mockState = {
+        mode: TIMER_MODES.SETUP,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 0,
+        sessionRemaining: 0,
+        soundEnabled: true,
+        soundVolume: 75,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      expect(mockElements["sound-toggle"].checked).toBe(true);
+      expect(mockElements["sound-range"].value).toBe("75");
+    });
+
+    test("should sync sound disabled state from background", async () => {
+      const mockState = {
+        mode: TIMER_MODES.SETUP,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 0,
+        sessionRemaining: 0,
+        soundEnabled: false,
+        soundVolume: 25,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      expect(mockElements["sound-toggle"].checked).toBe(false);
+      expect(mockElements["sound-range"].value).toBe("25");
+    });
+
+    test("should use default sound settings when not provided by background", async () => {
+      const mockState = {
+        mode: TIMER_MODES.SETUP,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 0,
+        sessionRemaining: 0,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      expect(mockElements["sound-toggle"].checked).toBe(false);
+      expect(mockElements["sound-range"].value).toBe("50");
+    });
+
+    test("should not update UI elements if sound settings haven't changed", async () => {
+      // Set initial state
+      mockElements["sound-toggle"].checked = true;
+      mockElements["sound-range"].value = "60";
+
+      const mockState = {
+        mode: TIMER_MODES.SETUP,
+        sessionType: SESSION_TYPES.WORK,
+        totalRemaining: 0,
+        sessionRemaining: 0,
+        soundEnabled: true,
+        soundVolume: 60,
+      };
+
+      mockBGClient.update.mockResolvedValue(mockState);
+
+      await import("@/ui/ui.js");
+
+      // Values should remain the same since they match the background state
+      expect(mockElements["sound-toggle"].checked).toBe(true);
+      expect(mockElements["sound-range"].value).toBe("60");
     });
   });
 });

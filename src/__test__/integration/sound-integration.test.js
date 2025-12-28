@@ -29,13 +29,14 @@ describe("Sound Integration - handleEvents Flow", () => {
       const { getTimer } = await import("@/background/timer-store.js");
 
       // Enable sound first
-      await handleEvents("sound/save", { isEnabled: true });
+      await handleEvents("sound/save", { soundEnabled: true, soundVolume: 75 });
 
       // Start timer - should trigger handleSound
       await handleEvents("timer/start", { minutes: 25 });
 
       const timer = getTimer();
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.soundVolume).toBe(75);
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
 
       // Sound should be playing during work session
@@ -53,7 +54,7 @@ describe("Sound Integration - handleEvents Flow", () => {
       const { handleEvents } = await import("@/background/events.js");
 
       // Disable sound
-      await handleEvents("sound/save", { isEnabled: false });
+      await handleEvents("sound/save", { soundEnabled: false, soundVolume: 0 });
 
       // Start timer
       await handleEvents("timer/start", { minutes: 25 });
@@ -72,7 +73,7 @@ describe("Sound Integration - handleEvents Flow", () => {
 
       const { handleEvents } = await import("@/background/events.js");
 
-      await handleEvents("sound/save", { isEnabled: true });
+      await handleEvents("sound/save", { soundEnabled: true, soundVolume: 50 });
       await handleEvents("timer/start", { minutes: 25 });
 
       vi.clearAllMocks();
@@ -94,7 +95,7 @@ describe("Sound Integration - handleEvents Flow", () => {
       const { handleEvents } = await import("@/background/events.js");
       const { getTimer } = await import("@/background/timer-store.js");
 
-      await handleEvents("sound/save", { isEnabled: true });
+      await handleEvents("sound/save", { soundEnabled: true, soundVolume: 80 });
       await handleEvents("timer/start", { minutes: 25 });
 
       vi.clearAllMocks();
@@ -104,6 +105,7 @@ describe("Sound Integration - handleEvents Flow", () => {
 
       expect(result.success).toBe(true);
       expect(getTimer().soundEnabled).toBe(true);
+      expect(getTimer().soundVolume).toBe(80);
     });
   });
 
@@ -114,12 +116,17 @@ describe("Sound Integration - handleEvents Flow", () => {
       const { handleEvents } = await import("@/background/events.js");
       const { getTimer } = await import("@/background/timer-store.js");
 
-      // Save sound enabled
-      const result = await handleEvents("sound/save", { isEnabled: true });
+      // Save sound enabled with volume
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: 90,
+      });
 
       expect(result.success).toBe(true);
       expect(result.soundEnabled).toBe(true);
+      expect(result.soundVolume).toBe(90);
       expect(getTimer().soundEnabled).toBe(true);
+      expect(getTimer().soundVolume).toBe(90);
     });
 
     test("should toggle sound settings", async () => {
@@ -129,12 +136,33 @@ describe("Sound Integration - handleEvents Flow", () => {
       const { getTimer } = await import("@/background/timer-store.js");
 
       // Enable sound
-      await handleEvents("sound/save", { isEnabled: true });
+      await handleEvents("sound/save", { soundEnabled: true, soundVolume: 60 });
       expect(getTimer().soundEnabled).toBe(true);
+      expect(getTimer().soundVolume).toBe(60);
 
       // Disable sound
-      await handleEvents("sound/save", { isEnabled: false });
+      await handleEvents("sound/save", { soundEnabled: false, soundVolume: 0 });
       expect(getTimer().soundEnabled).toBe(false);
+      expect(getTimer().soundVolume).toBe(0);
+    });
+
+    test("should validate sound volume range", async () => {
+      const { handleEvents } = await import("@/background/events.js");
+
+      // Test invalid volume values
+      const result1 = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: -1,
+      });
+      expect(result1.success).toBe(false);
+      expect(result1.error).toContain("Too small");
+
+      const result2 = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: 101,
+      });
+      expect(result2.success).toBe(false);
+      expect(result2.error).toContain("Too big");
     });
   });
 
@@ -150,12 +178,13 @@ describe("Sound Integration - handleEvents Flow", () => {
       await initTimer();
 
       await Promise.all([
-        handleEvents("sound/save", { isEnabled: true }),
+        handleEvents("sound/save", { soundEnabled: true, soundVolume: 70 }),
         handleEvents("timer/start", { minutes: 25 }),
       ]);
 
       const timer = getTimer();
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.soundVolume).toBe(70);
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
     });
   });
@@ -169,7 +198,7 @@ describe("Sound Integration - handleEvents Flow", () => {
       const { handleEvents } = await import("@/background/events.js");
       const { getTimer } = await import("@/background/timer-store.js");
 
-      await handleEvents("sound/save", { isEnabled: true });
+      await handleEvents("sound/save", { soundEnabled: true, soundVolume: 50 });
 
       // Start timer - sound will fail but timer should continue
       const result = await handleEvents("timer/start", { minutes: 25 });
@@ -194,7 +223,7 @@ describe("Sound Integration - handleEvents Flow", () => {
       const { handleEvents } = await import("@/background/events.js");
       const { getTimer } = await import("@/background/timer-store.js");
 
-      await handleEvents("sound/save", { isEnabled: true });
+      await handleEvents("sound/save", { soundEnabled: true, soundVolume: 50 });
       await handleEvents("timer/start", { minutes: 25 });
 
       // Pause with sound error

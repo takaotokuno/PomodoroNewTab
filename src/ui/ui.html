@@ -38,6 +38,7 @@
                         <button id="pause-button" class="control-button">Pause</button>
                         <button id="reset-button" class="control-button">Reset</button>
                     </div>
+
                 </div>
             </div>
 
@@ -55,10 +56,13 @@
 
         <!-- Sound Settings - Always Visible -->
         <div class="sound-settings">
-            <label class="sound-label">
+            <label class="sound-toggle-label">
                 <input type="checkbox" id="sound-toggle" />
-                自然音を再生
+                <div class="volume-icon-wrapper">
+                    <img src="../../resources/speaker.svg" alt="音量" class="volume-icon" />
+                </div>
             </label>
+            <input type="range" id="sound-range" class="volume-slider" min="0" max="100" />
         </div>
     </div>
 </body>

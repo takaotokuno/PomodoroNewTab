@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { initTimer, getTimer, saveSnapshot } from "./timer-store.js";
 import { startTick, stopTick } from "./setup-alarms.js";
 import { notify } from "./notification.js";
@@ -5,6 +6,11 @@ import { enableBlock, disableBlock } from "./sites-guard.js";
 import { handleSound } from "./sound-controller.js";
 import { createErrObject, normalizeResponse, isFatal } from "./result.js";
 import Constants from "../constants.js";
+
+const SoundSettingsSchema = z.object({
+  soundEnabled: z.boolean(),
+  soundVolume: z.number().min(0).max(100),
+});
 
 /**
  * Configuration for sub-module operations.
@@ -136,15 +142,21 @@ function _startTimerStep(minutes) {
  * @param {boolean} isEnabled - Whether sound is enabled
  * @returns {Object} Step object
  */
-function _saveSoundStep(isEnabled) {
+function _saveSoundStep(payload) {
   return {
     fn: () => {
-      if (isEnabled === undefined || isEnabled === null) {
-        throw new Error("Invalid isEnabled: parameter is required");
+      const result = SoundSettingsSchema.safeParse(payload);
+      if (!result.success) {
+        const errorMessages =
+          result.error?.issues?.map((issue) => issue.message).join(", ") ||
+          "Validation failed";
+        throw new Error(errorMessages);
       }
-      const soundEnabled = Boolean(isEnabled);
+
+      const { soundEnabled, soundVolume } = result.data;
       getTimer().soundEnabled = soundEnabled;
-      return { soundEnabled };
+      getTimer().soundVolume = soundVolume;
+      return result.data;
     },
     name: "saveSound",
     fatal: true,
@@ -189,11 +201,11 @@ const EVENTS = {
       sessionType: timer.sessionType,
       sessionRemaining: timer.getSessionRemaining(),
       soundEnabled: timer.soundEnabled,
+      soundVolume: timer.soundVolume,
     };
   },
   "sound/save": async (payload) => {
-    const { isEnabled } = payload;
-    const step = _saveSoundStep(isEnabled);
+    const step = _saveSoundStep(payload);
     return await _runStep(step);
   },
 };

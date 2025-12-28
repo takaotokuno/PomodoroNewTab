@@ -23,9 +23,8 @@ export class BGClient {
     return this._send("timer/reset");
   }
 
-  async saveSoundSettings(isEnabled) {
-    isEnabled = Boolean(isEnabled);
-    return this._send("sound/save", { isEnabled });
+  async saveSoundSettings(payload) {
+    return this._send("sound/save", payload);
   }
 
   async _send(type, payload = {}) {

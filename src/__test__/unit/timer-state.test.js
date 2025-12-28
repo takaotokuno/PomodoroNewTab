@@ -48,6 +48,7 @@ describe("TimerState", () => {
       expect(timer.sessionElapsed).toBe(0);
       expect(timer.pausedAt).toBe(null);
       expect(timer.soundEnabled).toBe(false);
+      expect(timer.soundVolume).toBe(50);
     });
   });
 
@@ -160,8 +161,10 @@ describe("TimerState", () => {
 
     test("should not reset sound settings when timer is reset", () => {
       timer.soundEnabled = true;
+      timer.soundVolume = 75;
       timer.reset();
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.soundVolume).toBe(75);
     });
   });
 
@@ -311,6 +314,7 @@ describe("TimerState", () => {
         sessionDuration: DURATIONS.WORK_SESSION,
         pausedAt: elapsedTime,
         soundEnabled: false,
+        soundVolume: 50,
       });
     });
 
@@ -337,6 +341,7 @@ describe("TimerState", () => {
         sessionDuration: DURATIONS.BREAK_SESSION,
         pausedAt: null,
         soundEnabled: true,
+        soundVolume: 50,
       };
 
       vi.setSystemTime(mockStartTime + DURATIONS.WORK_SESSION + fiveMinutes);

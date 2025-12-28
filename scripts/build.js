@@ -1,4 +1,5 @@
 import path from "path";
+import { build } from "esbuild";
 import { buildConfig } from "./config/build-config.js";
 import { cleanDirectory, copyFile, copyDirectory } from "./utils/file-utils.js";
 
@@ -8,10 +9,22 @@ async function buildExtension() {
   try {
     await cleanDirectory(outputDir);
 
+    // Bundle background script with dependencies
+    await build({
+      entryPoints: ["src/background/index.js"],
+      bundle: true,
+      format: "esm",
+      outfile: path.join(outputDir, "src/background/index.js"),
+      platform: "browser",
+      target: "chrome88",
+      external: ["chrome"],
+    });
+
+    // Copy other files (excluding bundled background files)
     await copyDirectory(
       buildConfig.sourceDir,
       path.join(outputDir, buildConfig.sourceDir),
-      buildConfig.excludePatterns
+      [...buildConfig.excludePatterns, "**/background/**"]
     );
 
     await copyDirectory(
