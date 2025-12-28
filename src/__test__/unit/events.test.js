@@ -193,7 +193,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("Invalid minutes: must be at least 5");
+      expect(result.error).toContain("Too small");
     });
 
     test('should return fatal error when "timer/start" is called with minutes above maximum', async () => {
@@ -201,7 +201,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("Invalid minutes: must be at most 300");
+      expect(result.error).toContain("Too big");
     });
 
     test('should return fatal error when "timer/start" is called without minutes', async () => {
@@ -209,7 +209,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("Invalid minutes: parameter is required");
+      expect(result.error).toContain("expected number, received undefined");
     });
 
     test('should return fatal error when "timer/start" is called with non-number minutes', async () => {
@@ -217,7 +217,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("Invalid minutes: must be a number");
+      expect(result.error).toContain("expected number, received string");
     });
 
     test('should return fatal error when "timer/start" is called with NaN', async () => {
@@ -225,7 +225,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("Invalid minutes: must be a number");
+      expect(result.error).toContain("expected number, received NaN");
     });
 
     test('should enable block and start tick when "timer/start" is invoked', async () => {
