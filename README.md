@@ -1,132 +1,116 @@
-# ポモドーロタイマー拡張機能
+# 🍅 Pomodoro BlockSite Timer
 
-集中力向上のためのポモドーロタイマーとソーシャルメディアブロック機能を同時に提供するブラウザ拡張機能です。
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue.svg)](https://chrome.google.com/webstore)
+[![Node.js](https://img.shields.io/badge/Node.js-v16+-green.svg)](https://nodejs.org/)
 
-## 概要
+> 🎯 集中力向上のためのポモドーロタイマーとソーシャルメディアブロック機能を提供するブラウザ拡張機能です。
 
-この拡張機能は、ポモドーロテクニックを使用して作業の集中力を向上させることを目的としています。
-タイマー機能に加えて、作業中に気が散る原因となるソーシャルメディアサイトを自動的にブロックします。
+## 📖 概要
 
-### 主な機能
+ポモドーロテクニックを使用して作業の集中力を向上させる拡張機能です。タイマー機能に加えて、作業中に気が散る原因となるソーシャルメディアサイトを自動的にブロックします。
 
-- **ポモドーロタイマー**: 5 分~300 分の範囲で時間を設定し、25 分の作業時間と 5 分の休憩時間の経過を通知します。
-- **新しいタブ置き換え**: 上記タイマーは「新しいタブ」で表示されます。
-- **サイトブロック機能**: 作業中に YouTube、Twitter、Facebook、Instagram、Pixiv などのサイトをブロックします。
-- **状態保持**: ブラウザを閉じた場合、経過時間は保持され、ブラウザを再び開くとカウントを再開します。
+## ✨ 主な機能
 
-### 技術仕様
+| 機能 | 説明 |
+|------|------|
+| 🍅 **ポモドーロタイマー** | 5分〜300分の範囲で時間を設定可能 |
+| 🆕 **新しいタブ置き換え** | タイマーが新しいタブページに表示 |
+| 🚫 **サイトブロック機能** | 作業中にソーシャルメディアサイトを自動ブロック |
+| 💾 **状態保持** | ブラウザを閉じても経過時間を保持し、再開時にカウント継続 |
 
-- **対応ブラウザ**: Chrome（Manifest V3 対応）
-- **必要な権限**: storage, tabs, notifications, alarms, declarativeNetRequest
-- **フレームワーク**: Vanilla JavaScript（ES6 Modules）
+## 🛠️ 技術仕様
 
-## 使用方法
+| 項目 | 詳細 |
+|------|------|
+| **対応ブラウザ** | Chrome, Edge（Manifest V3対応） |
+| **必要な権限** | `storage`, `tabs`, `notifications`, `alarms`, `declarativeNetRequest` |
+| **フレームワーク** | Vanilla JavaScript（ES6 Modules） |
+| **ビルドツール** | esbuild |
 
-1. 新しいタブを開くとポモドーロタイマーが表示されます
-2. タイマーの時間を設定（5 分〜300 分）
-3. 「開始」ボタンでタイマーを開始
-4. 作業中は指定されたサイトが自動的にブロックされます
-5. タイマー終了時に通知が表示されます
+## 🏪 リリース版のインストール
 
-## インストール方法
+> [!WARNING]
+> Chrome Web Storeからのインストールは準備中です。
 
-### Chrome での手動インストール
+Chrome Web Storeからインストール予定（準備中）
 
-1. ブラウザで `chrome://extensions/` を開く
-2. 右上の「デベロッパーモード」を有効にする
-3. 「パッケージ化されていない拡張機能を読み込む」をクリックする
-4. このプロジェクトのルートディレクトリを選択する
-5. 拡張機能が追加されたことを確認する
+## 🔧 開発版のインストール
 
-## 開発環境のセットアップ
+| 要件 | バージョン |
+|------|------------|
+| Node.js | v16以上推奨 |
+| npm | 最新版 |
 
-### 前提条件
+> [!NOTE]
+> 開発版をインストールする場合は、以下の手順に従ってください。
 
-- Node.js (v16 以上推奨)
-- npm
+1. **リポジトリをクローン**
+   ```bash
+   git clone <repository-url>
+   cd pomodoro-new-tab
+   ```
 
-### セットアップ手順
+2. **依存関係をインストール**
+   ```bash
+   npm install
+   ```
 
-1. リポジトリをクローン
+3. **拡張機能をビルド**
+   ```bash
+   npm run build
+   ```
 
-```bash
-git clone <repository-url>
-cd pomodoro-new-tab
-```
+4. **Chromeで手動インストール**
+   - ブラウザで `chrome://extensions/` を開く
+   - 右上の「デベロッパーモード」を有効にする
+   - 「パッケージ化されていない拡張機能を読み込む」をクリック
+   - `dist/latest` ディレクトリを選択
+   - 拡張機能が追加されたことを確認
 
-2. 依存関係をインストール
-
-```bash
-npm install
-```
-
-3. 開発用スクリプト
-
-```bash
-# テスト実行
-npm test
-
-# テスト（ウォッチモード）
-npm run test:watch
-
-# ESLintでコードチェック
-npm run lint
-
-# ESLintで自動修正
-npm run lint:fix
-
-# Prettierでコードフォーマット
-npm run format
-```
-
-## プロジェクト構造
+## 📁 プロジェクト構造
 
 ```
 pomodoro-new-tab/
-├── src/
-│   ├── background/          # バックグラウンドスクリプト
-│   │   ├── index.js         # メインのサービスワーカー
-│   │   ├── events.js        # イベントハンドラー
-│   │   ├── notification.js  # 通知機能
-│   │   ├── setup-alarms.js  # アラーム設定
-│   │   ├── sites-guard.js   # サイトブロック機能
-│   │   └── timer-store.js   # タイマー状態管理
-│   ├── ui/                  # ユーザーインターフェース
-│   │   ├── ui.html          # メインHTML
-│   │   ├── ui.js            # UI制御JavaScript
-│   │   ├── ui.css           # スタイルシート
-│   │   ├── bg-client.js     # バックグラウンドとの通信
-│   │   └── timer-ticker.js  # タイマー表示制御
-│   ├── __test__/            # テストファイル
-│   ├── constants.js         # 定数定義
-│   └── timer-state.js       # タイマー状態管理
-├── manifest.json            # 拡張機能マニフェスト
-├── package.json             # Node.js設定
-└── README.md               # このファイル
+├── src/               # ソースコード
+│   ├── background/    # バックグラウンドスクリプト
+│   ├── ui/            # ユーザーインターフェース
+│   └── __test__/      # テストファイル
+├── dist/              # ビルド出力
+│   └── latest/        # 最新ビルド
+├── scripts/           # ビルド・デプロイスクリプト
+├── manifest.json
+├── package.json
+└── README.md
 ```
 
-### ブロックされるサイト
+## 🚫 ブロックされるサイト
 
-作業中は以下のサイトが自動的にブロックされます：
+> [!IMPORTANT]
+> 作業中は以下のサイトが自動的にブロックされます
 
-- YouTube
-- ニコニコ動画
-- Twitter/X
-- Facebook
-- Instagram
-- Pixiv
-- Reddit
-- TikTok
-- 小説家になろう
+| カテゴリ | サイト |
+|----------|--------|
+| 🎥 **動画** | YouTube, ニコニコ動画, TikTok |
+| 📱 **SNS** | Twitter/X, Facebook, Instagram |
+| 🎨 **エンタメ** | Pixiv, Reddit |
+| 📚 **小説** | 小説家になろう |
 
-## ライセンス
+## 🐛 バグ報告・機能要望
 
-このプロジェクトは MIT ライセンスの下で公開されています。詳細は[LICENSE](LICENSE)ファイルを参照してください。
+> [!TIP]
+> 問題を発見した場合や新機能の要望がある場合は、GitHubのIssuesページで報告してください。
 
-## 謝辞
+## 📄 ライセンス
 
-このプロジェクトの開発には AI 支援ツールを部分的に使用しています。
+このプロジェクトは**MITライセンス**の下で公開されています。詳細は[LICENSE](LICENSE)ファイルを参照してください。
 
-## バグ報告・機能要望
+## 🙏 謝辞
 
-問題を発見した場合や新機能の要望がある場合は、GitHub の Issues ページで報告してください。
+このプロジェクトの開発には**AI支援ツール**を部分的に使用しています。
+
+---
+
+<div align="center">
+**🍅 集中して、生産性を向上させましょう！**
+</div>
