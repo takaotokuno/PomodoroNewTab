@@ -136,7 +136,8 @@ describe("Events", () => {
         totalRemaining: MOCK_TOTAL_REMAINING,
         sessionType: "work",
         sessionRemaining: MOCK_SESSION_REMAINING,
-        soundEnabled: undefined,
+        soundEnabled: void 0,
+        soundVolume: void 0,
       });
     });
 
@@ -348,42 +349,86 @@ describe("Events", () => {
       expect(mockStopTick).not.toHaveBeenCalled();
     });
 
-    test('should save sound settings when "sound/save" is invoked with true', async () => {
-      const result = await handleEvents("sound/save", { isEnabled: true });
+    test('should save sound settings when "sound/save"', async () => {
+      let result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: 100,
+      });
 
       expect(fakeTimer.soundEnabled).toBe(true);
       expect(result.soundEnabled).toBe(true);
-    });
+      expect(fakeTimer.soundVolume).toBe(100);
+      expect(result.soundVolume).toBe(100);
 
-    test('should save sound settings when "sound/save" is invoked with false', async () => {
-      const result = await handleEvents("sound/save", { isEnabled: false });
-
-      expect(fakeTimer.soundEnabled).toBe(false);
-      expect(result.soundEnabled).toBe(false);
-    });
-
-    test('should convert truthy values to boolean in "sound/save"', async () => {
-      const result = await handleEvents("sound/save", { isEnabled: "yes" });
-
-      expect(fakeTimer.soundEnabled).toBe(true);
-      expect(result.soundEnabled).toBe(true);
-    });
-
-    test('should convert falsy values to boolean in "sound/save"', async () => {
-      const result = await handleEvents("sound/save", { isEnabled: 0 });
+      result = await handleEvents("sound/save", {
+        soundEnabled: false,
+        soundVolume: 0,
+      });
 
       expect(fakeTimer.soundEnabled).toBe(false);
       expect(result.soundEnabled).toBe(false);
+      expect(fakeTimer.soundVolume).toBe(0);
+      expect(result.soundVolume).toBe(0);
     });
 
-    test('should return fatal error when "sound/save" is called without isEnabled', async () => {
-      const result = await handleEvents("sound/save", {});
+    test('should return fatal error when "sound/save" is called without soundEnabled', async () => {
+      const result = await handleEvents("sound/save", { soundVolume: 50 });
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain(
-        "Invalid isEnabled: parameter is required"
-      );
+      expect(result.error).toContain("expected boolean, received undefined");
+    });
+
+    test('should return fatal error when "sound/save" is called without soundVolume', async () => {
+      const result = await handleEvents("sound/save", { soundEnabled: true });
+
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("expected number, received undefined");
+    });
+
+    test('should return fatal error when "sound/save" is called with invalid soundEnabled type', async () => {
+      const result = await handleEvents("sound/save", {
+        soundEnabled: "yes",
+        soundVolume: 50,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("expected boolean, received string");
+    });
+
+    test('should return fatal error when "sound/save" is called with invalid soundVolume type', async () => {
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: "50",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("expected number, received string");
+    });
+
+    test('should return fatal error when "sound/save" is called with soundVolume below minimum', async () => {
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: -1,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Too small");
+    });
+
+    test('should return fatal error when "sound/save" is called with soundVolume above maximum', async () => {
+      const result = await handleEvents("sound/save", {
+        soundEnabled: true,
+        soundVolume: 101,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
+      expect(result.error).toContain("Too big");
     });
   });
 

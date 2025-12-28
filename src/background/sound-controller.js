@@ -3,6 +3,7 @@ import Constants from "../constants.js";
 const { TIMER_MODES, SESSION_TYPES } = Constants;
 
 let isPlaying = false;
+let volume = 0;
 let initPromise = null;
 
 /**
@@ -10,7 +11,7 @@ let initPromise = null;
  * @throws {Error} If sound control fails
  */
 export async function handleSound() {
-  let timer = getTimer();
+  const timer = getTimer();
 
   if (
     !timer.soundEnabled ||
@@ -21,6 +22,10 @@ export async function handleSound() {
     return;
   }
 
+  if (isPlaying && timer.soundVolume !== volume) {
+    await updateVolume();
+  }
+
   if (isPlaying) return;
 
   await playAudio();
@@ -29,9 +34,11 @@ export async function handleSound() {
 export async function playAudio() {
   try {
     isPlaying = true;
+    volume = getTimer().soundVolume;
+
     await sendAudioMessage("PLAY", {
       soundFile: "resources/nature-sound.mp3",
-      volume: 0.2,
+      volume: getTimer().soundVolume,
       loop: true,
     });
     console.log("Audio playback started");
@@ -49,6 +56,19 @@ export async function stopAudio() {
   } catch (error) {
     isPlaying = false;
     throw error;
+  }
+}
+
+export async function updateVolume() {
+  if (!isPlaying) return;
+
+  try {
+    await sendAudioMessage("UPDATE_VOLUME", {
+      volume: getTimer().soundVolume,
+    });
+    console.log("Volume updated");
+  } catch (error) {
+    console.warn("Failed to update volume:", error.message);
   }
 }
 

@@ -8,6 +8,8 @@ class UIController {
     this.mode = TIMER_MODES.SETUP;
     this.syncInterval = null;
     this.isProcessing = false;
+    this.soundEnabled = false;
+    this.soundVolume = 50;
 
     this.ticker = new TimerTicker(this);
     this.bgClient = new BGClient();
@@ -31,6 +33,7 @@ class UIController {
 
     // Sound Setting
     this.soundToggle = document.getElementById("sound-toggle");
+    this.soundRange = document.getElementById("sound-range");
 
     this.attachEventListeners();
 
@@ -81,7 +84,6 @@ class UIController {
           this.timerDurationError.style.display = "block";
           return;
         }
-
         this.bgClient.start(minutes);
         this.ticker.start(minutes);
 
@@ -133,20 +135,37 @@ class UIController {
     this.soundToggle.addEventListener(
       "change",
       this.withProcessingLock(async () => {
-        const isEnabled = this.soundToggle.checked;
-
-        try {
-          const result = await this.bgClient.saveSoundSettings(isEnabled);
-          if (!result || !result.success) {
-            throw new Error(result?.error || "Failed to save sound settings");
-          }
-        } catch (error) {
-          console.error("Error saving sound settings:", error);
-          // Revert checkbox on error
-          this.soundToggle.checked = !isEnabled;
-        }
+        await this.saveSoundSettings();
       })
     );
+
+    this.soundRange.addEventListener(
+      "change",
+      this.withProcessingLock(async () => {
+        await this.saveSoundSettings();
+      })
+    );
+  }
+
+  async saveSoundSettings() {
+    const preSoundEnabled = this.soundEnabled;
+    const preSoundVolume = this.soundVolume;
+    try {
+      const result = await this.bgClient.saveSoundSettings({
+        soundEnabled: this.soundToggle.checked,
+        soundVolume: parseInt(this.soundRange.value, 10),
+      });
+      if (!result || !result.success) {
+        throw new Error(result?.error || "Failed to save sound settings");
+      }
+      this.soundEnabled = this.soundToggle.checked;
+      this.soundVolume = parseInt(this.soundRange.value, 10);
+    } catch (error) {
+      console.error("Error saving sound settings:", error);
+      // Revert checkbox on error
+      this.soundToggle.checked = preSoundEnabled;
+      this.soundRange.value = preSoundVolume.toString();
+    }
   }
 
   async resetView() {
@@ -220,7 +239,13 @@ class UIController {
 
     const soundEnabled = state.soundEnabled ?? false;
     if (this.soundToggle.checked !== soundEnabled) {
+      this.soundEnabled = soundEnabled;
       this.soundToggle.checked = soundEnabled;
+    }
+    const soundVolume = state.soundVolume ?? 50;
+    if (parseInt(this.soundRange.value, 10) !== soundVolume) {
+      this.soundVolume = soundVolume;
+      this.soundRange.value = soundVolume.toString();
     }
 
     this.updateView();

@@ -10,6 +10,7 @@ const { TIMER_MODES, SESSION_TYPES } = Constants;
 // Mock timer-store
 const mockTimer = {
   soundEnabled: true,
+  soundVolume: 0.5,
   mode: TIMER_MODES.RUNNING,
   sessionType: SESSION_TYPES.WORK,
 };
@@ -21,7 +22,7 @@ vi.mock("@/background/timer-store.js", () => ({
 
 describe("SoundController", () => {
   let chromeMock;
-  let handleSound, playAudio, stopAudio, setupSound;
+  let handleSound, playAudio, stopAudio, setupSound, updateVolume;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -33,7 +34,8 @@ describe("SoundController", () => {
     currentTimer = { ...mockTimer };
 
     const soundController = await import("@/background/sound-controller.js");
-    ({ handleSound, playAudio, stopAudio, setupSound } = soundController);
+    ({ handleSound, playAudio, stopAudio, setupSound, updateVolume } =
+      soundController);
   });
 
   describe("handleSound()", () => {
@@ -44,7 +46,7 @@ describe("SoundController", () => {
         type: "AUDIO_CONTROL",
         action: "PLAY",
         soundFile: "resources/nature-sound.mp3",
-        volume: 0.2,
+        volume: mockTimer.soundVolume,
         loop: true,
       });
     });
@@ -89,7 +91,7 @@ describe("SoundController", () => {
         type: "AUDIO_CONTROL",
         action: "PLAY",
         soundFile: "resources/nature-sound.mp3",
-        volume: 0.2,
+        volume: mockTimer.soundVolume,
         loop: true,
       });
     });
@@ -113,6 +115,28 @@ describe("SoundController", () => {
         type: "AUDIO_CONTROL",
         action: "STOP",
       });
+    });
+  });
+
+  describe("updateVolume()", () => {
+    test("should send UPDATE_VOLUME message when audio is playing", async () => {
+      await playAudio();
+      chromeMock.runtime.sendMessage.mockClear();
+
+      currentTimer.soundVolume = 0.8;
+      await updateVolume();
+
+      expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
+        type: "AUDIO_CONTROL",
+        action: "UPDATE_VOLUME",
+        volume: 0.8,
+      });
+    });
+
+    test("should not send message when audio is not playing", async () => {
+      await updateVolume();
+
+      expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled();
     });
   });
 

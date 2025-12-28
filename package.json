@@ -21,10 +21,13 @@
     "tag": "node scripts/tag.js",
     "tag:beta": "node scripts/tag.js --beta",
     "publish:chrome": "node scripts/publish-chrome.js",
+    "upload:edge": "node scripts/upload-edge.js",
+    "wait:edge": "node scripts/wait-edge.js",
     "publish:edge": "node scripts/publish-edge.js"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.0.0",
+    "esbuild": "^0.27.2",
     "eslint": "^8.36.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-import": "^2.27.5",
@@ -35,6 +38,7 @@
   "dependencies": {
     "archiver": "^7.0.1",
     "node-fetch": "^3.3.2",
-    "picomatch": "^4.0.3"
+    "picomatch": "^4.0.3",
+    "zod": "^4.2.1"
   }
 }

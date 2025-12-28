@@ -70,11 +70,12 @@ describe("Sound End-to-End Tests", () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
       // Enable sound and start timer
-      await bgClient.saveSoundSettings(true);
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 80 });
       await bgClient.start(25);
 
       const timer = getTimer();
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.soundVolume).toBe(80);
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(timer.sessionType).toBe(SESSION_TYPES.WORK);
       expect(isPlaying).toBe(true);
@@ -88,47 +89,70 @@ describe("Sound End-to-End Tests", () => {
       expect(timer.mode).toBe(TIMER_MODES.RUNNING);
       expect(isPlaying).toBe(true);
 
-      // Reset and verify sound setting persists
+      // Reset and verify sound settings persist
       await bgClient.reset();
       expect(timer.mode).toBe(TIMER_MODES.SETUP);
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.soundVolume).toBe(80);
       expect(isPlaying).toBe(false);
     });
 
     test("should stop sound when paused", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      await bgClient.saveSoundSettings(true);
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 60 });
       await bgClient.start(25);
       expect(isPlaying).toBe(true);
 
       await bgClient.pause();
       expect(isPlaying).toBe(false);
       expect(getTimer().soundEnabled).toBe(true); // Setting persists
+      expect(getTimer().soundVolume).toBe(60); // Volume persists
     });
 
     test("should not play sound when disabled from start", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      await bgClient.saveSoundSettings(false);
+      await bgClient.saveSoundSettings({ soundEnabled: false, soundVolume: 0 });
       await bgClient.start(25);
 
       expect(getTimer().soundEnabled).toBe(false);
+      expect(getTimer().soundVolume).toBe(0);
       expect(isPlaying).toBe(false);
     });
 
     test("should save sound settings via events integration", async () => {
       chromeMock.storage.local.set.mockResolvedValue(undefined);
 
-      await bgClient.saveSoundSettings(true);
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 90 });
 
-      // Verify storage was called (snapshot includes soundEnabled)
+      // Verify storage was called (snapshot includes soundEnabled and soundVolume)
       expect(chromeMock.storage.local.set).toHaveBeenCalled();
       const callArg = chromeMock.storage.local.set.mock.calls[0][0];
       expect(callArg.pomodoroTimerSnapshot.soundEnabled).toBe(true);
+      expect(callArg.pomodoroTimerSnapshot.soundVolume).toBe(90);
 
       const timer = getTimer();
       expect(timer.soundEnabled).toBe(true);
+      expect(timer.soundVolume).toBe(90);
+    });
+
+    test("should handle volume validation in e2e flow", async () => {
+      chromeMock.storage.local.set.mockResolvedValue(undefined);
+
+      // Test valid volume range
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 50 });
+      expect(getTimer().soundVolume).toBe(50);
+
+      // Test edge cases
+      await bgClient.saveSoundSettings({ soundEnabled: true, soundVolume: 0 });
+      expect(getTimer().soundVolume).toBe(0);
+
+      await bgClient.saveSoundSettings({
+        soundEnabled: true,
+        soundVolume: 100,
+      });
+      expect(getTimer().soundVolume).toBe(100);
     });
   });
 });
