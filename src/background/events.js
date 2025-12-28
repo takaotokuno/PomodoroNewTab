@@ -8,21 +8,8 @@ import { createErrObject, normalizeResponse, isFatal } from "./result.js";
 import Constants from "../constants.js";
 
 const SoundSettingsSchema = z.object({
-  soundEnabled: z.boolean({
-    required_error: "soundEnabled is required",
-    invalid_type_error: "soundEnabled is boolean",
-  }),
-  soundVolume: z
-    .number({
-      required_error: "soundVolume is required",
-      invalid_type_error: "soundVolume is Number",
-    })
-    .min(0, {
-      message: "soundVolume must be greater than or equal to 0",
-    })
-    .max(100, {
-      message: "soundVolume must be lower than or equal to 100",
-    }),
+  soundEnabled: z.boolean(),
+  soundVolume: z.number().min(0).max(100),
 });
 
 /**
@@ -160,10 +147,10 @@ function _saveSoundStep(payload) {
     fn: () => {
       const result = SoundSettingsSchema.safeParse(payload);
       if (!result.success) {
-        const errorMessages = result.error.errors
-          .map((err) => `${err.path.join(".")}: ${err.message}`)
-          .join(", ");
-        throw new Error(`Validation failed: ${errorMessages}`);
+        const errorMessages = result.error?.issues
+          ?.map((issue) => issue.message)
+          .join(", ") || "Validation failed";
+        throw new Error(errorMessages);
       }
 
       const { soundEnabled, soundVolume } = result.data;

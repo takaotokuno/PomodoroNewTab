@@ -376,7 +376,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("soundEnabled is required");
+      expect(result.error).toContain("expected boolean, received undefined");
     });
 
     test('should return fatal error when "sound/save" is called without soundVolume', async () => {
@@ -384,7 +384,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("soundVolume is required");
+      expect(result.error).toContain("expected number, received undefined");
     });
 
     test('should return fatal error when "sound/save" is called with invalid soundEnabled type', async () => {
@@ -395,7 +395,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("soundEnabled is boolean");
+      expect(result.error).toContain("expected boolean, received string");
     });
 
     test('should return fatal error when "sound/save" is called with invalid soundVolume type', async () => {
@@ -406,7 +406,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain("soundVolume is Number");
+      expect(result.error).toContain("expected number, received string");
     });
 
     test('should return fatal error when "sound/save" is called with soundVolume below minimum', async () => {
@@ -417,9 +417,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain(
-        "soundVolume must be greater than or equal to 0"
-      );
+      expect(result.error).toContain("Too small");
     });
 
     test('should return fatal error when "sound/save" is called with soundVolume above maximum', async () => {
@@ -430,9 +428,7 @@ describe("Events", () => {
 
       expect(result.success).toBe(false);
       expect(result.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result.error).toContain(
-        "soundVolume must be lower than or equal to 100"
-      );
+      expect(result.error).toContain("Too big");
     });
   });
 
