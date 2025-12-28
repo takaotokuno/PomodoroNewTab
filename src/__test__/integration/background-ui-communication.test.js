@@ -206,17 +206,17 @@ describe("Background-UI Communication Integration", () => {
       const result1 = await handleEvents("timer/start", { minutes: 0 });
       expect(result1.success).toBe(false);
       expect(result1.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result1.error).toContain("Invalid minutes");
+      expect(result1.error).toContain("Too small");
 
       const result2 = await handleEvents("timer/start", { minutes: -5 });
       expect(result2.success).toBe(false);
       expect(result2.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result2.error).toContain("Invalid minutes");
+      expect(result2.error).toContain("Too small");
 
       const result3 = await handleEvents("timer/start", {});
       expect(result3.success).toBe(false);
       expect(result3.severity).toBe(Constants.SEVERITY_LEVELS.FATAL);
-      expect(result3.error).toContain("Invalid minutes");
+      expect(result3.error).toContain("expected number, received undefined");
     });
 
     it("should execute timer/pause event correctly", async () => {
